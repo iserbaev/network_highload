@@ -1,0 +1,12 @@
+ssh aws-ec2-t2
+
+aws ec2 describe-instances
+
+# Login Docker to AWS ECR
+aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/v3c4w4q9
+
+# Tag
+docker tag network-highload:latest public.ecr.aws/v3c4w4q9/network-highload:latest
+
+# Push docker image to AWS ECR
+docker push public.ecr.aws/v3c4w4q9/network-highload:latest
