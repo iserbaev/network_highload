@@ -1,0 +1,4 @@
+-Xmn2G
+-Xmx4G
+-Xss8M
+-XX:+UseG1GC
