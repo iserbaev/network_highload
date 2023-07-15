@@ -40,12 +40,12 @@ lazy val cliTasks = Seq(
 addCommandAlias("scalafixCheck", "scalafix --check")
 addCommandAlias("scalafixCheckAll", "scalafixAll --check")
 
-addCommandAlias("allCompile", "all Compile/compile Test/compile libs-int/Test/compile")
-addCommandAlias("allScalafix", "all scalafixAll libs-int/scalafixAll")
-addCommandAlias("allScalafixCheck", "scalafixAll --check ; libs-int/scalafixAll --check")
-addCommandAlias("allScalafmt", "all scalafmtAll libs-int/scalafmtAll")
-addCommandAlias("allScalafmtCheck", "all scalafmtCheckAll libs-int/scalafmtCheckAll")
-addCommandAlias("allTest", "all test libs-int/test")
+addCommandAlias("allCompile", "all Compile/compile Test/compile")
+addCommandAlias("allScalafix", "all scalafixAll")
+addCommandAlias("allScalafixCheck", "scalafixAll --check")
+addCommandAlias("allScalafmt", "all scalafmtAll")
+addCommandAlias("allScalafmtCheck", "all scalafmtCheckAll")
+addCommandAlias("allTest", "all test")
 
 addCommandAlias(
   "prePush",
@@ -64,20 +64,6 @@ inThisBuild(
     organization  := "ru.kryptonite.libs",
     versionScheme := Some("semver-spec"),
     scalaVersion  := Versions.Scala213,
-//    credentials += Credentials("Sonatype Nexus Repository Manager", NexusHost, NexusUser, NexusPass),
-//    publishTo := {
-//      val nexus = s"https://$NexusHost/"
-//      if ((ThisProject / isSnapshot).value) {
-//        Some("snapshots".at(nexus + "repository/maven-snapshots/"))
-//      } else {
-//        Some("releases".at(nexus + "repository/maven-releases/"))
-//      }
-//    },
-//    resolvers ++= Seq(
-//      Resolver.defaultLocal,
-//      s"beaTunes".at(s"https://www.beatunes.com/repo/maven2"),
-//      s"$NexusHost".at(s"https://$NexusHost/repository/maven-public/"),
-//    ) ++ Resolver.sonatypeOssRepos("releases"),
     javacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -106,7 +92,17 @@ inThisBuild(
   )
 )
 
-lazy val common = Project(id = "common", base = file("common"))
+lazy val api = Project(id = "network-highload-api", base = file("api"))
+  .enablePlugins(Fs2Grpc)
+  .settings(
+    scalacOptions += "-Wconf:src=src_managed/.*:silent", // disable warnings in generated code
+    Test / parallelExecution := false,
+    libraryDependencies ++= Dependencies.api.value,
+    scalapbCodeGeneratorOptions += CodeGeneratorOption.FlatPackage,
+  )
+
+lazy val core = Project(id = "core", base = file("core"))
+  .dependsOn(api)
   .settings(
     commonSettings,
     libraryDependencies ++= Dependencies.common.value,
@@ -115,9 +111,7 @@ lazy val common = Project(id = "common", base = file("common"))
 
 lazy val root = Project(id = "all", base = file("."))
   .enablePlugins(GitBranchPrompt)
-  .aggregate(
-    common
-  )
+  .aggregate(api, core)
   .settings(
     commonSettings,
     publish / skip := true,

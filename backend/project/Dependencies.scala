@@ -132,6 +132,15 @@ object Dependencies {
     val grpcNetty    = Seq("io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion)
     val grpcServices = Seq("io.grpc" % "grpc-services" % scalapb.compiler.Version.grpcJavaVersion)
 
+    val grpc = Seq(
+      "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion,
+      "io.grpc" % "grpc-services" % scalapb.compiler.Version.grpcJavaVersion,
+      "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion,
+      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
+      "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.11" % Versions.ScalaPbCommonProtos,
+      "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.11" % Versions.ScalaPbCommonProtos % "protobuf",
+    )
+
     val hikariCP = Seq("com.zaxxer" % "HikariCP" % Versions.HikariCP)
 
     val http4sCore   = Seq("org.http4s" %% "http4s-core" % Versions.Http4s)
@@ -277,6 +286,10 @@ object Dependencies {
   }
 
   import ModuleIds._
+
+  val api = Def.setting(
+    catsCore ++ catsEffect ++ enumeratum ++ enumeratumCirce ++ fs2Core ++ grpc ++ newtypes
+  )
 
   val common = Def.setting(
     catsCore ++ catsKernel ++
