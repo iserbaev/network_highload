@@ -75,7 +75,7 @@ inThisBuild(
       "11",
       "-Xlint:deprecation" // Print deprecation warning details.
     ),
-    autoAPIMappings := true, // will use external ScalaDoc links for managed dependencies
+    autoAPIMappings      := true, // will use external ScalaDoc links for managed dependencies
     mimaFailOnNoPrevious := false,
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     updateOptions := updateOptions.value.withCachedResolution(true),
@@ -109,9 +109,18 @@ lazy val core = Project(id = "core", base = file("core"))
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 
-lazy val root = Project(id = "all", base = file("."))
+lazy val user = Project(id = "user", base = file("user"))
+  .dependsOn(api, core)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= Dependencies.common.value,
+    libraryDependencies ++= Dependencies.commonTest.value,
+  )
+
+lazy val root = Project(id = "network-highload-all", base = file("."))
   .enablePlugins(GitBranchPrompt)
-  .aggregate(api, core)
+  .aggregate(api, core, user)
+  .dependsOn(user)
   .settings(
     commonSettings,
     publish / skip := true,

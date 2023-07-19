@@ -132,11 +132,11 @@ object Dependencies {
     val grpcNetty    = Seq("io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion)
     val grpcServices = Seq("io.grpc" % "grpc-services" % scalapb.compiler.Version.grpcJavaVersion)
 
-    val grpc = Seq(
-      "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion,
-      "io.grpc" % "grpc-services" % scalapb.compiler.Version.grpcJavaVersion,
+    val grpcServer = Seq(
+      "io.grpc"               % "grpc-netty-shaded"    % scalapb.compiler.Version.grpcJavaVersion,
+      "io.grpc"               % "grpc-services"        % scalapb.compiler.Version.grpcJavaVersion,
       "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion,
-      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
+      "com.thesamet.scalapb" %% "scalapb-runtime"      % scalapb.compiler.Version.scalapbVersion % "protobuf",
       "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.11" % Versions.ScalaPbCommonProtos,
       "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.11" % Versions.ScalaPbCommonProtos % "protobuf",
     )
@@ -288,7 +288,7 @@ object Dependencies {
   import ModuleIds._
 
   val api = Def.setting(
-    catsCore ++ catsEffect ++ enumeratum ++ enumeratumCirce ++ fs2Core ++ grpc ++ newtypes
+    catsCore ++ catsEffect ++ enumeratum ++ enumeratumCirce ++ fs2Core ++ grpcServer ++ newtypes
   )
 
   val common = Def.setting(
@@ -307,6 +307,69 @@ object Dependencies {
     (catsTestkit ++
       pureconfigGeneric ++
       weaverCore ++ weaverCats ++ weaverScalacheck).map(_ % Test)
+  )
+
+  val connectorsSql = Def.setting(
+    catsCore ++
+      catsEffect ++ catsEffectKernel ++ catsEffectStd ++
+      log4CatsCore ++
+      doobie ++ doobiePostgres ++
+      flyway ++
+      hikariCP ++
+      pureconfigCore ++ pureconfigGeneric ++
+      shapeless
+  )
+
+  val grpc = Def.setting(
+    catsKernel ++ catsCore ++
+      catsEffect ++ catsEffectKernel ++ catsEffectStd ++
+      fs2Core ++
+      grpcApi ++ grpcNetty ++ grpcServices ++ grpcServer ++
+      log4CatsCore ++
+      protobuf ++
+      pureconfigCore ++ pureconfigGeneric ++ pureconfigSquants ++
+      scalapbRuntime ++
+      scodecBits ++
+      shapeless ++
+      squants
+  )
+
+  val grpcMetrics = Def.setting(
+    catsKernel ++ catsCore ++
+      catsEffectKernel ++ catsEffectStd ++ catsEffect ++
+      grpcApi ++
+      prometheus
+  )
+
+  val http = Def.setting(
+    caseInsensitive ++
+      catsCore ++
+      catsEffect ++ catsEffectKernel ++
+      circeCore ++
+      config ++
+      fs2Core ++
+      http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++
+      http4sBlazeCore ++ http4sBlazeServer ++ http4sNettyCore ++ http4sNettyServer ++
+      log4CatsCore ++
+      nettyTransport ++
+      pureconfigCore ++ pureconfigGeneric ++
+      shapeless
+  )
+
+  val httpTest = Def.setting(
+    (http4sClient ++
+      weaverCats).map(_ % Test)
+  )
+
+  val httpTapir = Def.setting(
+    catsCore ++
+      catsEffectKernel ++ catsEffect ++
+      circeCore ++
+      config ++
+      fs2Core ++
+      http4sCore ++
+      log4CatsCore ++
+      tapirCore ++ tapirServer
   )
 
   val sbtScalafix = Def.setting(

@@ -1,7 +1,7 @@
-package ru.th.auth
+package ru.nh.auth
 
 import cats.effect.IO
-import ru.th.auth.AuthService.Auth
+import ru.nh.auth.AuthService.Auth
 
 import java.util.UUID
 
