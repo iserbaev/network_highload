@@ -1,4 +1,4 @@
-import Dependencies._
+import DockerConfig.dockerSettings
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport.mimaBinaryIssueFilters
 import sbtrelease._
@@ -63,7 +63,7 @@ inThisBuild(
   Seq(
     organization  := "ru.kryptonite.libs",
     versionScheme := Some("semver-spec"),
-    scalaVersion  := Versions.Scala213,
+    scalaVersion  := Dependencies.Versions.Scala213,
     javacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -105,24 +105,56 @@ lazy val core = Project(id = "core", base = file("core"))
   .dependsOn(api)
   .settings(
     commonSettings,
-    libraryDependencies ++= Dependencies.common.value,
+    libraryDependencies ++= (Dependencies.common.value ++ Dependencies.connectorsSql.value),
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 
 lazy val user = Project(id = "user", base = file("user"))
+  .enablePlugins(BuildInfoPlugin)
   .dependsOn(api, core)
   .settings(
     commonSettings,
-    libraryDependencies ++= Dependencies.common.value,
+    buildInfoKeys := Seq[BuildInfoKey](
+      name,
+      version,
+      scalaVersion,
+      sbtVersion,
+      BuildInfoKey.map(git.gitCurrentBranch) { case (_, branch) =>
+        "gitBranch" -> branch
+      },
+      BuildInfoKey.map(git.gitHeadCommit) { case (_, sha) =>
+        "gitCommit" -> sha.orNull
+      }
+    ),
+    buildInfoPackage := "nh.user.cli",
+    buildInfoOptions ++= Seq(
+      BuildInfoOption.BuildTime,
+      BuildInfoOption.ToJson
+    ),
+    Compile / run / fork := true,
+    Compile / run / javaOptions ++= Seq(
+      "-Dconfig.file=../src/universal/conf/application.conf",
+      "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
+    ),
+    libraryDependencies ++= (Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value),
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 
 lazy val root = Project(id = "network-highload-all", base = file("."))
-  .enablePlugins(GitBranchPrompt)
+  .enablePlugins(GitBranchPrompt, JavaAppPackaging)
   .aggregate(api, core, user)
   .dependsOn(user)
   .settings(
-    commonSettings,
+    Compile / mainClass := Some("ru.nh.cli.UserServerCli"),
+//    Compile / discoveredMainClasses ++= Seq("ru.nh.cli.ClientCli"),
+    executableScriptName := "carrier-server-cli",
+    bashScriptExtraDefines ++= Seq(
+      """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
+    ),
+    publish      := {},
+    publishLocal := {},
+    dockerSettings,
     publish / skip := true,
     logo           := customLogo,
     usefulTasks    := cliTasks,
@@ -142,7 +174,7 @@ lazy val root = Project(id = "network-highload-all", base = file("."))
       releaseStepCommand("versionCheck"), // Run task `versionCheck` after the release version is set
       ReleaseTransformations.commitReleaseVersion,
       ReleaseTransformations.tagRelease,
-      releaseStepCommand("publish"),
+      releaseStepCommand("Docker/publish"),
       ReleaseTransformations.setNextVersion,
       ReleaseTransformations.commitNextVersion,
       releaseStepTask(

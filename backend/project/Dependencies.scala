@@ -16,6 +16,7 @@ object Dependencies {
     val CaseInsensitive    = "1.4.0"
     val Cats               = "2.9.0"
     val CatsEffect         = "3.5.1"
+    val CatsRetry          = "3.1.0"
     val Caffeine           = "3.1.6"
     val Circe              = "0.14.5"
     val CirceGenericExtras = "0.14.3"
@@ -77,6 +78,7 @@ object Dependencies {
       "org.typelevel" %% "cats-kernel-laws" % Versions.Cats,
       "org.typelevel" %% "cats-laws"        % Versions.Cats,
     )
+    val catsRetry   = Seq("com.github.cb372" %% "cats-retry" % Versions.CatsRetry)
     val catsTestkit = Seq("org.typelevel" %% "cats-testkit" % Versions.Cats)
 
     val catsEffectKernel = Seq("org.typelevel" %% "cats-effect-kernel" % Versions.CatsEffect)
@@ -311,7 +313,7 @@ object Dependencies {
 
   val connectorsSql = Def.setting(
     catsCore ++
-      catsEffect ++ catsEffectKernel ++ catsEffectStd ++
+      catsEffect ++ catsEffectKernel ++ catsEffectStd ++ catsRetry ++
       log4CatsCore ++
       doobie ++ doobiePostgres ++
       flyway ++

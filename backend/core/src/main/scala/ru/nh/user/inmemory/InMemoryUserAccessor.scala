@@ -5,7 +5,7 @@ import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
 import java.util.UUID
 
-class InMemoryUserAccessor(ref: Ref[IO, Map[UUID, User]]) extends UserAccessor {
+class InMemoryUserAccessor(ref: Ref[IO, Map[UUID, User]]) extends UserAccessor[IO] {
   def save(u: RegisterUserCommand): IO[User] =
     IO.randomUUID.flatMap { id =>
       ref

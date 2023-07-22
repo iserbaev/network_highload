@@ -3,9 +3,8 @@ package ru.nh.auth
 import cats.effect.IO
 import ru.nh.auth.AuthService.Auth
 
-import java.util.UUID
-
 trait AuthService {
+  def login(id: String, password: String): IO[String]
   def authorize(token: String): IO[Auth]
 }
 
@@ -19,7 +18,10 @@ object AuthService {
   }
 
   final case class DummyAuthService() extends AuthService {
+    def login(id: String, password: String): IO[String] =
+      IO(id)
+
     def authorize(token: String): IO[Auth] =
-      IO(Auth(UUID.randomUUID().toString, Set(Role.Admin)))
+      IO(Auth(token, Set(Role.Admin)))
   }
 }
