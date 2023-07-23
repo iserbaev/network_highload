@@ -14,16 +14,15 @@ final class PostgresModule(val db: DoobieSupport.DBSettings, val write: Transact
 ) {
   val healthCheck: IO[Unit] =
     log.trace(show"Checking health of Postgres at '${db.database.connection.jdbcUrl}' ...") *>
-      (PostgresModule.checkFullScan(read), PostgresModule.getTables(read)).flatMapN {
-        (fullScanQueries, ourTables) =>
-          fullScanQueries
-            .filterNot(q => q.relname.contains("pg"))
-            .filter(q => ourTables.contains(q.relname))
-            .traverse_ { checkResult =>
-              log
-                .info(s"Detected sequential scan query in " ++ checkResult.relname)
-                .whenA(checkResult.isFullScan)
-            }
+      (PostgresModule.checkFullScan(read), PostgresModule.getTables(read)).flatMapN { (fullScanQueries, ourTables) =>
+        fullScanQueries
+          .filterNot(q => q.relname.contains("pg"))
+          .filter(q => ourTables.contains(q.relname))
+          .traverse_ { checkResult =>
+            log
+              .info(s"Detected sequential scan query in " ++ checkResult.relname)
+              .whenA(checkResult.isFullScan)
+          }
       }
 
 }
