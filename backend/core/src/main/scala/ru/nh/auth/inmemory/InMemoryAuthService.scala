@@ -4,6 +4,7 @@ import cats.effect.kernel.Resource
 import cats.effect.{ IO, Ref }
 import io.circe.parser.decode
 import pdi.jwt._
+import pdi.jwt.algorithms.JwtHmacAlgorithm
 import ru.nh.auth.AuthService
 import ru.nh.auth.AuthService.{ Token, UserPassword }
 
@@ -14,8 +15,8 @@ import scala.util.Try
 class InMemoryAuthService private (userPasswords: Ref[IO, Map[String, String]]) extends AuthService[IO] {
   import ru.nh.http.json.all._
 
-  private val key: String        = "secretKey"
-  private val algo: JwtAlgorithm = JwtAlgorithm.HS256
+  private val key: String            = "secretKey"
+  private val algo: JwtHmacAlgorithm = JwtAlgorithm.HS256
 
   private def buildToken(id: String, password: String) = {
     val claim = JwtClaim(
@@ -29,7 +30,7 @@ class InMemoryAuthService private (userPasswords: Ref[IO, Map[String, String]]) 
 
   private def decodeToken(token: String): Try[UserPassword] =
     JwtCirce
-      .decode(token)
+      .decode(token, key, Seq(algo))
       .flatMap { claim =>
         decode[UserPassword](claim.content).toTry
       }
@@ -43,10 +44,8 @@ class InMemoryAuthService private (userPasswords: Ref[IO, Map[String, String]]) 
     })
 
   def authorize(token: String): IO[Option[AuthService.Auth]] =
-    IO.fromTry(decodeToken(token)).flatMap { up =>
-      userPasswords.get
-        .map(_.get(up.id).filter(_ == up.password))
-        .map(_.map(_ => AuthService.Auth(UUID.randomUUID().toString, up.id, Set(AuthService.Role.Admin))))
+    IO.fromTry(decodeToken(token)).map { up =>
+      Some(AuthService.Auth(UUID.randomUUID().toString, up.id, Set(AuthService.Role.Admin)))
     }
 }
 

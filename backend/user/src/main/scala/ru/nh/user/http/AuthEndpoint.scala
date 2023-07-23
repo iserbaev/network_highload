@@ -24,6 +24,7 @@ class AuthEndpoint(val authService: AuthService[IO])(implicit L: LoggerFactory[I
     endpoint
       .in(resourcePath)
       .tag(resource)
+      .post
       .errorOut(statusCode)
       .errorOut(jsonBody[Option[ErrorResponse]])
       .in(jsonBody[UserPassword])

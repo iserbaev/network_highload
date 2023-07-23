@@ -16,7 +16,7 @@ import java.util.UUID
 
 class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   private def getUserStatement(userId: UUID): Fragment =
-    sql"""SELECT user_id, createdAt, name, surname, age, gender, city
+    sql"""SELECT user_id, created_at, name, surname, age, gender, city
          |FROM users
          |WHERE user_id = $userId
          """.stripMargin
