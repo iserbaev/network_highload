@@ -371,7 +371,7 @@ object Dependencies {
       fs2Core ++
       http4sCore ++
       log4CatsCore ++
-      tapirCore ++ tapirServer
+      tapirCore ++ tapirServer ++ tapirMetrics
   )
 
   val sbtScalafix = Def.setting(

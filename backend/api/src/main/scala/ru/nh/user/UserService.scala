@@ -7,6 +7,6 @@ import java.util.UUID
 trait UserService {
   def register(userInfo: RegisterUserCommand): IO[Unit]
 
-  def get(id: UUID): IO[Option[RegisterUserCommand]]
+  def get(id: UUID): IO[Option[User]]
 
 }
