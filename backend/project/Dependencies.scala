@@ -27,6 +27,8 @@ object Dependencies {
     val Enumeratum         = "1.7.2"
     val Flyway             = "9.20.0"
     val Fs2                = "3.7.0"
+    val JwtHttp4sVersion   = "1.2.0"
+    val JwtScalaVersion    = "9.4.3"
     val HikariCP           = "5.0.1"
     val Http4s             = "0.23.22"
     val Http4sBlaze        = "0.23.15"
@@ -129,6 +131,12 @@ object Dependencies {
     val fs2Core   = Seq("co.fs2" %% "fs2-core" % Versions.Fs2)
     val fs2Io     = Seq("co.fs2" %% "fs2-io" % Versions.Fs2)
     val fs2Scodec = Seq("co.fs2" %% "fs2-scodec" % Versions.Fs2)
+
+    val jwt = Seq(
+//      "dev.profunktor"       %% "http4s-jwt-auth" % Versions.JwtHttp4sVersion,
+//      "com.github.jwt-scala" %% "jwt-core"        % Versions.JwtScalaVersion,
+//      "com.github.jwt-scala" %% "jwt-circe"       % Versions.JwtScalaVersion
+    )
 
     val grpcApi      = Seq("io.grpc" % "grpc-api" % scalapb.compiler.Version.grpcJavaVersion)
     val grpcNetty    = Seq("io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion)
@@ -296,7 +304,7 @@ object Dependencies {
   val common = Def.setting(
     catsCore ++ catsKernel ++
       catsEffect ++ catsEffectKernel ++ catsEffectStd ++
-      circeCore ++ circeJawn ++ circeParser ++
+      circeCore ++ circeJawn ++ circeParser ++ circeGeneric ++ circeGenericExtras ++
       config ++
       decline ++
       fs2Core ++ fs2Io ++
@@ -350,6 +358,7 @@ object Dependencies {
       circeCore ++
       config ++
       fs2Core ++
+      jwt ++
       http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++
       http4sBlazeCore ++ http4sBlazeServer ++ http4sNettyCore ++ http4sNettyServer ++
       log4CatsCore ++

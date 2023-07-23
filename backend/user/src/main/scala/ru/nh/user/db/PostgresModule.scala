@@ -14,7 +14,7 @@ final class PostgresModule(val db: DoobieSupport.DBSettings, val write: Transact
 ) {
   val healthCheck: IO[Unit] =
     log.trace(show"Checking health of Postgres at '${db.database.connection.jdbcUrl}' ...") *>
-      (PostgresModule.checkFullScan(read), PostgresModule.getCarrierTables(read)).flatMapN {
+      (PostgresModule.checkFullScan(read), PostgresModule.getTables(read)).flatMapN {
         (fullScanQueries, carrierTables) =>
           fullScanQueries
             .filterNot(q => q.relname.contains("pg"))
@@ -38,7 +38,7 @@ object PostgresModule {
         }
     }
 
-  private[postgres] final case class FullScanCheckResult(
+  private[db] final case class FullScanCheckResult(
       schemaname: String,
       relname: String,
       seqTupRead: Option[Long],
@@ -49,7 +49,7 @@ object PostgresModule {
     def isFullScan: Boolean = seqScan.exists(_ > 0) && rowCount.exists(_ > 0)
   }
 
-  private[postgres] def checkFullScan(read: Transactor[IO]): IO[Seq[FullScanCheckResult]] =
+  private[db] def checkFullScan(read: Transactor[IO]): IO[Seq[FullScanCheckResult]] =
     sql"""SELECT schemaname,
          |       relname,
          |       seq_scan,
@@ -60,11 +60,11 @@ object PostgresModule {
          |WHERE seq_scan > 0
          |ORDER BY 5 DESC""".stripMargin.query[FullScanCheckResult].to[List].transact(read)
 
-  private[postgres] def getCarrierTables(read: Transactor[IO]): IO[List[String]] =
+  private[db] def getTables(read: Transactor[IO]): IO[List[String]] =
     sql"""|SELECT table_name
           |  FROM information_schema.tables
           | WHERE table_type = 'BASE TABLE'
-          |  AND table_catalog = 'carrier'
+          |  AND table_catalog = 'network_highload'
           |  AND table_schema = 'public'""".stripMargin
       .query[String]
       .to[List]

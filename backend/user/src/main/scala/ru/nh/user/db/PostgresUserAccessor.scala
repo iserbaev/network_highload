@@ -2,8 +2,8 @@ package ru.nh.user.db
 
 import cats.Reducible
 import cats.data.NonEmptyChain
-import cats.effect.{ IO, Resource }
 import cats.effect.std.UUIDGen
+import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._
@@ -62,7 +62,7 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
 object PostgresUserAccessor {
   import ru.nh.db.doobie.DoobieSupport._
   def resource(implicit L: LoggerFactory[IO]): Resource[IO, PostgresUserAccessor] = Resource.eval {
-    L.fromClass(classOf[PostgresUserAccessor]).map { log =>
+    L.fromClass(classOf[PostgresUserAccessor]).map { _ =>
       new PostgresUserAccessor
     }
   }

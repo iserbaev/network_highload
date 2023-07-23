@@ -7,11 +7,11 @@ import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import java.util.UUID
 
 class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) extends UserService {
-  def register(userInfo: RegisterUserCommand): IO[Unit] =
-    accessor.save(userInfo).void <* log.debug(show"save ${userInfo.name}")
+  def register(userInfo: RegisterUserCommand): IO[User] =
+    accessor.save(userInfo) <* log.debug(show"save ${userInfo.name}")
 
   def get(id: UUID): IO[Option[User]] =
-    accessor.get(id).flatTap(u => log.debug(show"For $id got $u"))
+    accessor.get(id).flatTap(u => log.debug(s"For $id got $u"))
 
 }
 

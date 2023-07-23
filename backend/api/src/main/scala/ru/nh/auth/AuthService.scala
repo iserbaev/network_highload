@@ -1,15 +1,19 @@
 package ru.nh.auth
 
 import cats.effect.IO
-import ru.nh.auth.AuthService.Auth
+import ru.nh.auth.AuthService.{ Auth, Token }
 
-trait AuthService {
-  def login(id: String, password: String): IO[String]
-  def authorize(token: String): IO[Auth]
+import java.util.UUID
+
+trait AuthService[F[_]] {
+  def login(id: String, password: String): F[Option[Token]]
+  def authorize(token: String): F[Auth]
 }
 
 object AuthService {
-  final case class Auth(userId: String, roles: Set[Role])
+  final case class UserPassword(id: String, password: String)
+  final case class Token(token: String)
+  final case class Auth(requestId: String, userId: String, roles: Set[Role])
 
   final case class Role(roleId: String)
 
@@ -17,11 +21,11 @@ object AuthService {
     val Admin: Role = Role("network-highload-admin")
   }
 
-  final case class DummyAuthService() extends AuthService {
-    def login(id: String, password: String): IO[String] =
-      IO(id)
+  final case class DummyAuthService() extends AuthService[IO] {
+    def login(id: String, password: String): IO[Option[Token]] =
+      IO(Some(Token(id)))
 
     def authorize(token: String): IO[Auth] =
-      IO(Auth(token, Set(Role.Admin)))
+      IO(Auth(UUID.randomUUID().toString, token, Set(Role.Admin)))
   }
 }
