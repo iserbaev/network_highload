@@ -133,9 +133,9 @@ object Dependencies {
     val fs2Scodec = Seq("co.fs2" %% "fs2-scodec" % Versions.Fs2)
 
     val jwt = Seq(
-//      "dev.profunktor"       %% "http4s-jwt-auth" % Versions.JwtHttp4sVersion,
-//      "com.github.jwt-scala" %% "jwt-core"        % Versions.JwtScalaVersion,
-//      "com.github.jwt-scala" %% "jwt-circe"       % Versions.JwtScalaVersion
+      "dev.profunktor"       %% "http4s-jwt-auth" % Versions.JwtHttp4sVersion,
+      "com.github.jwt-scala" %% "jwt-core"        % Versions.JwtScalaVersion,
+      "com.github.jwt-scala" %% "jwt-circe"       % Versions.JwtScalaVersion
     )
 
     val grpcApi      = Seq("io.grpc" % "grpc-api" % scalapb.compiler.Version.grpcJavaVersion)
@@ -304,7 +304,7 @@ object Dependencies {
   val common = Def.setting(
     catsCore ++ catsKernel ++
       catsEffect ++ catsEffectKernel ++ catsEffectStd ++
-      circeCore ++ circeJawn ++ circeParser ++ circeGeneric ++ circeGenericExtras ++
+      circeCore ++ circeJawn ++ circeParser ++ circeGeneric ++ circeGenericExtras ++ jwt ++
       config ++
       decline ++
       fs2Core ++ fs2Io ++

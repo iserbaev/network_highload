@@ -38,11 +38,16 @@ class UserEndpointDescriptions(val authService: AuthService[IO])(implicit L: Log
       authService
         .authorize(_)
         .attempt
-        .map(_.leftMap {
-          case _: NoSuchElementException   => (StatusCode.NotFound, none)
-          case _: IllegalArgumentException => (StatusCode.BadRequest, none)
-          case _                           => (StatusCode.BadRequest, none)
-        })
+        .map {
+          _.leftMap {
+            case _: NoSuchElementException   => (StatusCode.NotFound, none[ErrorResponse])
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none[ErrorResponse])
+            case _                           => (StatusCode.BadRequest, none[ErrorResponse])
+          }.flatMap {
+            case Some(value) => value.asRight[(StatusCode, Option[ErrorResponse])]
+            case None        => (StatusCode.BadRequest, none[ErrorResponse]).asLeft[AuthService.Auth]
+          }
+        }
     )
 
   val registerUser: BaseEndpoint[RegisterUserCommand, UserId] =

@@ -1,5 +1,6 @@
 package ru.nh.user.http
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
@@ -28,7 +29,7 @@ class AuthEndpoint(val authService: AuthService[IO])(implicit L: LoggerFactory[I
       .in(jsonBody[UserPassword])
       .out(jsonBody[Token])
 
-  val loginEndpoint = loginEndpointDescription.serverLogic { login =>
+  val loginEndpoint: SEndpoint = loginEndpointDescription.serverLogic { login =>
     authService
       .login(login.id, login.password)
       .attempt
@@ -42,4 +43,6 @@ class AuthEndpoint(val authService: AuthService[IO])(implicit L: LoggerFactory[I
         }
       }
   }
+
+  val all = NonEmptyList.of(loginEndpoint)
 }

@@ -1,5 +1,6 @@
 package ru.nh.user.http
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
@@ -14,10 +15,11 @@ class UserEndpoints(authService: AuthService[IO], userService: UserService)(impl
 
   private val userEndpointDescriptions = new UserEndpointDescriptions(authService)
 
-  val registerUser = userEndpointDescriptions.registerUser
+  val registerUser: SEndpoint = userEndpointDescriptions.registerUser
     .serverLogic { cmd =>
       userService
         .register(cmd)
+        .flatTap(uid => authService.register(uid.id.toString, cmd.password))
         .attempt
         .map {
           _.map(u => UserId(u.id))
@@ -28,7 +30,7 @@ class UserEndpoints(authService: AuthService[IO], userService: UserService)(impl
         }
     }
 
-  val getUserProfile = userEndpointDescriptions.getUserProfile
+  val getUserProfile: SEndpoint = userEndpointDescriptions.getUserProfile
     .serverLogic { auth => id =>
       userService
         .get(id)
@@ -43,4 +45,6 @@ class UserEndpoints(authService: AuthService[IO], userService: UserService)(impl
           }
         }
     }
+
+  val all = NonEmptyList.of(registerUser, getUserProfile)
 }
