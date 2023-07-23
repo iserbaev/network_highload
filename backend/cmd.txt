@@ -1,0 +1,3 @@
+    sbt Universal/stage
+    cd target/universal/stage
+    bin/user-service-cli server

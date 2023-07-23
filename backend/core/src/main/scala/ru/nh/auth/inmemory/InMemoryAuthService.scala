@@ -2,10 +2,10 @@ package ru.nh.auth.inmemory
 
 import cats.effect.kernel.Resource
 import cats.effect.{ IO, Ref }
+import io.circe.parser.decode
 import pdi.jwt._
 import ru.nh.auth.AuthService
 import ru.nh.auth.AuthService.{ Token, UserPassword }
-import io.circe.parser.decode
 
 import java.time.Instant
 import java.util.UUID

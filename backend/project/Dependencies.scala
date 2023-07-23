@@ -306,7 +306,7 @@ object Dependencies {
       catsEffect ++ catsEffectKernel ++ catsEffectStd ++
       circeCore ++ circeJawn ++ circeParser ++ circeGeneric ++ circeGenericExtras ++ jwt ++
       config ++
-      decline ++
+      declineEffect ++
       fs2Core ++ fs2Io ++
       log4CatsCore ++ log4CatsNoop ++
       pureconfigCore ++

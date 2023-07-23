@@ -38,7 +38,7 @@ object HttpModule {
       useKeepAlive: Boolean,
       useNettyBackend: Boolean
   )
-  final case class Config(auth: AuthConfig, server: HttpServerConfig)
+  final case class Config(server: HttpServerConfig, auth: AuthConfig)
 
   def resource(cfg: Config, userModule: UserModule, metricsModule: MetricsModule)(
       implicit L: LoggerFactory[IO]

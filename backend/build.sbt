@@ -126,7 +126,7 @@ lazy val user = Project(id = "user", base = file("user"))
         "gitCommit" -> sha.orNull
       }
     ),
-    buildInfoPackage := "nh.user.cli",
+    buildInfoPackage := "ru.nh.user.cli",
     buildInfoOptions ++= Seq(
       BuildInfoOption.BuildTime,
       BuildInfoOption.ToJson
@@ -145,9 +145,9 @@ lazy val root = Project(id = "network-highload-all", base = file("."))
   .aggregate(api, core, user)
   .dependsOn(user)
   .settings(
-    Compile / mainClass := Some("ru.nh.cli.UserServerCli"),
+    Compile / mainClass := Some("ru.nh.user.cli.UserServiceCli"),
 //    Compile / discoveredMainClasses ++= Seq("ru.nh.cli.ClientCli"),
-    executableScriptName := "carrier-server-cli",
+    executableScriptName := "user-service-cli",
     bashScriptExtraDefines ++= Seq(
       """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
