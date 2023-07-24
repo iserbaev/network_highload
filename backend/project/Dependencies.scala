@@ -302,16 +302,17 @@ object Dependencies {
   )
 
   val common = Def.setting(
-    catsCore ++ catsKernel ++
+    caseInsensitive ++
+      catsCore ++ catsKernel ++
       catsEffect ++ catsEffectKernel ++ catsEffectStd ++
-      circeCore ++ circeJawn ++ circeParser ++ circeGeneric ++ circeGenericExtras ++ jwt ++
-      config ++
-      declineEffect ++
       fs2Core ++ fs2Io ++
       log4CatsCore ++ log4CatsNoop ++
-      pureconfigCore ++
-      scodecBits
+      scodecBits ++
+      squants
   )
+
+  val conf = Def.setting(config ++ pureconfigCore ++ pureconfigGeneric ++ pureconfigSquants)
+  val cli  = Def.setting(declineEffect ++ logback)
 
   val commonTest = Def.setting(
     (catsTestkit ++
@@ -320,51 +321,27 @@ object Dependencies {
   )
 
   val connectorsSql = Def.setting(
-    catsCore ++
-      catsEffect ++ catsEffectKernel ++ catsEffectStd ++ catsRetry ++
-      log4CatsCore ++
+    catsRetry ++
       doobie ++ doobiePostgres ++
       flyway ++
       hikariCP ++
-      pureconfigCore ++ pureconfigGeneric ++
       shapeless
   )
+
+  val json = Def.setting(circeCore ++ circeJawn ++ circeParser ++ circeGeneric ++ circeGenericExtras ++ jwt)
 
   val grpc = Def.setting(
-    catsKernel ++ catsCore ++
-      catsEffect ++ catsEffectKernel ++ catsEffectStd ++
-      fs2Core ++
-      grpcApi ++ grpcNetty ++ grpcServices ++ grpcServer ++
-      log4CatsCore ++
+    grpcApi ++ grpcNetty ++ grpcServices ++ grpcServer ++
       protobuf ++
-      pureconfigCore ++ pureconfigGeneric ++ pureconfigSquants ++
-      scalapbRuntime ++
-      scodecBits ++
-      shapeless ++
-      squants
+      scalapbRuntime
   )
 
-  val grpcMetrics = Def.setting(
-    catsKernel ++ catsCore ++
-      catsEffectKernel ++ catsEffectStd ++ catsEffect ++
-      grpcApi ++
-      prometheus
-  )
+  val metrics = Def.setting(prometheus)
 
   val http = Def.setting(
-    caseInsensitive ++
-      catsCore ++
-      catsEffect ++ catsEffectKernel ++
-      circeCore ++
-      config ++
-      fs2Core ++
-      jwt ++
-      http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++
+    http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++
       http4sBlazeCore ++ http4sBlazeServer ++ http4sNettyCore ++ http4sNettyServer ++
-      log4CatsCore ++
-      nettyTransport ++
-      pureconfigCore ++ pureconfigGeneric ++
-      shapeless
+      nettyTransport
   )
 
   val httpTest = Def.setting(
@@ -372,16 +349,7 @@ object Dependencies {
       weaverCats).map(_ % Test)
   )
 
-  val httpTapir = Def.setting(
-    catsCore ++
-      catsEffectKernel ++ catsEffect ++
-      circeCore ++
-      config ++
-      fs2Core ++
-      http4sCore ++
-      log4CatsCore ++
-      tapirCore ++ tapirServer ++ tapirMetrics
-  )
+  val httpTapir = Def.setting(tapirCore ++ tapirServer ++ tapirMetrics)
 
   val sbtScalafix = Def.setting(
     sbtScalafixTypelevel

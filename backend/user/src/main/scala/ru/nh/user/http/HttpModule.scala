@@ -1,23 +1,23 @@
 package ru.nh.user.http
 
 import cats.data.NonEmptyList
-import cats.effect.{IO, Resource}
+import cats.effect.{ IO, Resource }
 import io.netty.channel.ChannelOption
 import org.http4s.HttpRoutes
 import org.http4s.netty.NettyChannelOptions
 import org.http4s.netty.server.NettyServerBuilder
 import org.http4s.server.Server
-import org.http4s.server.defaults.{IdleTimeout, ResponseTimeout}
+import org.http4s.server.defaults.{ IdleTimeout, ResponseTimeout }
 import org.typelevel.log4cats.LoggerFactory
 import ru.nh.auth.AuthService
 import ru.nh.user.UserModule
 import ru.nh.user.http.HttpModule.Config
 import ru.nh.user.metrics.MetricsModule
-import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
+import sttp.tapir.server.http4s.{ Http4sServerInterpreter, Http4sServerOptions }
 import sttp.tapir.swagger.SwaggerUIOptions
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 trait HttpModule {
   def config: Config
@@ -44,6 +44,8 @@ object HttpModule {
       implicit L: LoggerFactory[IO]
   ): Resource[IO, HttpModule] =
     AuthService(userModule.accessor).flatMap { authService =>
+      val log = L.getLoggerFromClass(classOf[HttpModule])
+
       val authEndpoints = new AuthEndpoint(authService)
       val userEndpoint  = new UserEndpoints(authService, userModule.service)
 
@@ -74,6 +76,7 @@ object HttpModule {
         )
         .withHttpApp(serverRoutes.orNotFound)
         .resource
+        .evalTap(_ => log.info(s"Run http user server on ${cfg.server.host}:${cfg.server.port}"))
         .map { srv =>
           new HttpModule {
             override def config: Config = cfg

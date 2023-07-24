@@ -1,7 +1,7 @@
 package ru.nh.auth
 
-import cats.effect.kernel.Resource
 import cats.effect.IO
+import cats.effect.kernel.Resource
 import io.circe.parser.decode
 import pdi.jwt._
 import pdi.jwt.algorithms.JwtHmacAlgorithm

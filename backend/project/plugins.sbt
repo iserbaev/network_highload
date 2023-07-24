@@ -1,5 +1,6 @@
-libraryDependencies += "ch.qos.logback"     % "logback-classic"  % "1.4.8"
+libraryDependencies += "ch.qos.logback"     % "logback-classic"  % "1.4.7"
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.23.0"
+libraryDependencies += "org.slf4j"          % "slf4j-nop"        % "1.7.21"
 
 addSbtPlugin("ch.epfl.scala"                     % "sbt-scalafix"              % "0.11.0")
 addSbtPlugin("ch.epfl.scala"                     % "sbt-version-policy"        % "2.1.1")
