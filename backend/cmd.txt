@@ -1,3 +1,5 @@
-    sbt Universal/stage
-    cd target/universal/stage
-    bin/user-service-cli server
+sbt Universal/stage
+cd target/universal/stage
+bin/user-service-cli server
+
+sbt Docker/publishLocal

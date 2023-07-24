@@ -9,14 +9,21 @@ ssh yc-vm1
 # Create authorized key
 yc iam key create --service-account-name yc-admin1 -o key.json
 
+#Configure docker
+yc container registry configure-docker
+
 # Login to YC docker registry
 cat yc-sa-key.json | docker login --username json_key --password-stdin cr.yandex
 
 # List images in
 yc container image list
 
+#Tag docker image
+docker tag public.ecr.aws/v3c4w4q9/nh-user:0.0.1-SNAPSHOT cr.yandex/crpd5q7b07g01gbmpiom/nh-user:0.0.1-SNAPSHOT
+
+
 # Push docker image
-docker push image-tag
+docker push cr.yandex/crpd5q7b07g01gbmpiom/nh-user:0.0.1-SNAPSHOT
 
 # Logout from YC docker registry
 docker logout
