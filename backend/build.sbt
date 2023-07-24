@@ -154,18 +154,6 @@ lazy val root = Project(id = "network-highload-all", base = file("."))
     publish      := {},
     publishLocal := {},
     dockerSettings,
-    dockerBuildCommand := {
-      if (sys.props("os.arch") != "amd64") {
-        // use buildx with platform to build supported amd64 images on other CPU architectures
-        // this may require that you have first run 'docker buildx create' to set docker buildx up
-        dockerExecCommand.value ++ Seq(
-          "buildx",
-          "build",
-          "--platform=linux/amd64",
-          "--load"
-        ) ++ dockerBuildOptions.value :+ "."
-      } else dockerBuildCommand.value
-    },
     publish / skip := true,
     logo           := customLogo,
     usefulTasks    := cliTasks,
