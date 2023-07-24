@@ -9,7 +9,7 @@ import ru.nh.http.ErrorResponse
 import ru.nh.user.{ UserId, UserService }
 import sttp.model.StatusCode
 
-class UserEndpoints(authService: AuthService[IO], userService: UserService)(implicit L: LoggerFactory[IO]) {
+class UserEndpoints(authService: AuthService, userService: UserService)(implicit L: LoggerFactory[IO]) {
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[UserEndpoints])
 
@@ -19,7 +19,6 @@ class UserEndpoints(authService: AuthService[IO], userService: UserService)(impl
     .serverLogic { cmd =>
       userService
         .register(cmd)
-        .flatTap(uid => authService.register(uid.id.toString, cmd.password))
         .attempt
         .map {
           _.map(u => UserId(u.id))

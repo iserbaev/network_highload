@@ -16,7 +16,7 @@ import java.util.UUID
 
 class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   private def getUserStatement(userId: UUID): Fragment =
-    sql"""SELECT user_id, created_at, name, surname, age, gender, city
+    sql"""SELECT user_id, created_at, name, surname, age, gender, city, password
          |FROM users
          |WHERE user_id = $userId
          """.stripMargin
@@ -29,34 +29,38 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
 
   private def insertUser(id: UUID, u: RegisterUserCommand): Fragment =
     sql"""INSERT INTO users(
-         |             user_id, name, surname, age, gender, city
+         |             user_id, name, surname, age, gender, city, password
          |           )
          |   VALUES  (
          |             $id, ${u.name}, ${u.surname}, ${u.age},
-         |             ${u.gender}, ${u.city}
-         |           )        
+         |             ${u.gender}, ${u.city}, ${u.password}
+         |           )
+         |RETURNING user_id, created_at, name, surname, age, gender, city, password            
           """.stripMargin
 
   private def insertHobbies[R[_]: Reducible](h: R[(UUID, String)]): Fragment =
     fr"INSERT INTO user_hobby(user_id, hobby)" ++
       Fragments.values[R, (UUID, String)](h)
 
-  def save(u: RegisterUserCommand): ConnectionIO[User] =
+  def save(u: RegisterUserCommand): ConnectionIO[UserRow] =
     UUIDGen[ConnectionIO].randomUUID.flatMap { id =>
-      (
-        insertUser(id, u).update.run,
+      insertUser(id, u).update
+        .withGeneratedKeys[UserRow]("user_id", "created_at", "name", "surname", "age", "gender", "city", "password")
+        .compile
+        .lastOrError <*
         NonEmptyChain.fromSeq(u.hobbies.map(h => (id, h))).traverse_(insertHobbies(_).update.run)
-      ).tupled
-        .as(u.toUser(id))
     }
 
-  def get(userId: UUID): ConnectionIO[Option[User]] =
+  def getUserRow(userId: UUID): ConnectionIO[Option[UserRow]] =
     getUserStatement(userId)
       .query[UserRow]
       .option
-      .flatMap(_.traverse { userRow =>
-        getUserHobbiesStatement(userId).query[String].to[List].map(userRow.toUser)
-      })
+
+  def getHobbies(userId: UUID): ConnectionIO[List[String]] =
+    getUserHobbiesStatement(userId).query[String].to[List]
+
+  def getUser(userId: UUID): ConnectionIO[Option[User]] =
+    getUserRow(userId).flatMap(_.traverse(row => getHobbies(userId).map(row.toUser)))
 }
 
 object PostgresUserAccessor {

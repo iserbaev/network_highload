@@ -8,10 +8,10 @@ import java.util.UUID
 
 class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) extends UserService {
   def register(userInfo: RegisterUserCommand): IO[User] =
-    accessor.save(userInfo) <* log.debug(show"save ${userInfo.name}")
+    accessor.save(userInfo).map(_.toUser(userInfo.hobbies)) <* log.debug(show"save ${userInfo.name}")
 
   def get(id: UUID): IO[Option[User]] =
-    accessor.get(id).flatTap(u => log.debug(s"For $id got $u"))
+    accessor.getUser(id).flatTap(u => log.debug(s"For $id got $u"))
 
 }
 

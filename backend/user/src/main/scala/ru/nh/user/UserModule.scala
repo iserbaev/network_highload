@@ -8,6 +8,8 @@ import ru.nh.user.db.{ PostgresModule, PostgresUserAccessor }
 import ru.nh.user.metrics.MetricsModule
 
 trait UserModule {
+  def accessor: UserAccessor[IO]
+
   def service: UserService
 }
 
@@ -19,12 +21,13 @@ object UserModule {
     PostgresModule(config.db, metricsModule.metricsFactory).flatMap { transactors =>
       PostgresUserAccessor
         .inIO(config.db.transactionRetry, transactors.write, transactors.read)
-        .flatMap { accessor =>
-          UserManager(accessor)
-        }
-        .map { us =>
-          new UserModule {
-            def service: UserService = us
+        .flatMap { acc =>
+          UserManager(acc).map { us =>
+            new UserModule {
+              def accessor: UserAccessor[IO] = acc
+
+              def service: UserService = us
+            }
           }
         }
     }

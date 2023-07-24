@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users
     surname    VARCHAR(128)              NOT NULL,
     age        INTEGER                   NOT NULL,
     gender     VARCHAR(128)              NOT NULL,
-    city       VARCHAR(128)              NOT NULL
+    city       VARCHAR(128)              NOT NULL,
+    password   VARCHAR(256)              NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_hobby

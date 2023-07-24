@@ -24,10 +24,7 @@ final case class RegisterUserCommand(
     hobbies: List[String],
     city: String,
     password: String
-) {
-  def toUser(id: UUID): User =
-    User(id, name, surname, age, gender, hobbies, city)
-}
+)
 
 final case class UserId(id: UUID)
 

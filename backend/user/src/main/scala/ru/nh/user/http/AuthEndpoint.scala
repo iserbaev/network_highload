@@ -11,7 +11,7 @@ import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
-class AuthEndpoint(val authService: AuthService[IO])(implicit L: LoggerFactory[IO]) {
+class AuthEndpoint(val authService: AuthService)(implicit L: LoggerFactory[IO]) {
   import ru.nh.http.json.all._
   import tapirImplicits._
 

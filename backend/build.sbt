@@ -146,7 +146,6 @@ lazy val root = Project(id = "network-highload-all", base = file("."))
   .dependsOn(user)
   .settings(
     Compile / mainClass := Some("ru.nh.user.cli.UserServiceCli"),
-//    Compile / discoveredMainClasses ++= Seq("ru.nh.cli.ClientCli"),
     executableScriptName := "user-service-cli",
     bashScriptExtraDefines ++= Seq(
       """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",

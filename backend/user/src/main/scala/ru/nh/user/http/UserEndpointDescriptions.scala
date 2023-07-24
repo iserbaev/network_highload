@@ -13,7 +13,7 @@ import sttp.tapir.server.PartialServerEndpoint
 
 import java.util.UUID
 
-class UserEndpointDescriptions(val authService: AuthService[IO])(implicit L: LoggerFactory[IO]) {
+class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerFactory[IO]) {
   import ru.nh.http.json.all._
   import tapirImplicits._
 
