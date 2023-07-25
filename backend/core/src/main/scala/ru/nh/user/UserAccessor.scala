@@ -1,9 +1,9 @@
 package ru.nh.user
 
 import cats.~>
-import ru.nh.user.UserAccessor.{UserAccessorMapK, UserRow}
+import ru.nh.user.UserAccessor.{ UserAccessorMapK, UserRow }
 
-import java.time.{Instant, LocalDate}
+import java.time.{ Instant, LocalDate }
 import java.util.UUID
 
 trait UserAccessor[F[_]] {
