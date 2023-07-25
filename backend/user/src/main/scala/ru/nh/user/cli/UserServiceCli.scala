@@ -10,7 +10,8 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 import ru.nh.db.doobie.DoobieSupport
-import ru.nh.user.UserModule
+import ru.nh.user.{ UserAccessor, UserModule }
+import ru.nh.user.db.Populate
 import ru.nh.user.http.HttpModule
 import ru.nh.user.metrics.MetricsModule
 
@@ -25,7 +26,7 @@ object UserServiceCli
 }
 
 object UserCli {
-  def program(migrate: Boolean, mock: Boolean): IO[ExitCode] =
+  def program(migrate: Boolean, mock: Boolean, populate: Boolean): IO[ExitCode] =
     IO
       .fromTry(
         ConfigSource.default.load[Config].leftMap(fails => new RuntimeException(fails.prettyPrint())).toTry
@@ -40,12 +41,15 @@ object UserCli {
               ifFalse = DoobieSupport.validate(config.user.db)
             )
 
+        def populateProgram(userAccessor: UserAccessor[IO]): IO[Unit] =
+          Populate.getUsers.flatMap(_.traverse_(userAccessor.save)).whenA(populate)
+
         val runProgram =
           MetricsModule
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => UserModule(config.user, m).tupleLeft(m))
             .flatMap { case (m, u) =>
-              HttpModule.resource(config.http, u, m)
+              HttpModule.resource(config.http, u, m).evalTap(_ => populateProgram(u.accessor))
             }
 
         migrateOrValidate.unlessA(mock) *> runProgram.useForever
@@ -56,11 +60,14 @@ object UserCli {
   val forceMigrateOpt: Opts[Boolean] =
     Opts.flag("force-migrate", s"Forces DB migration", "f").orFalse
 
+  val populateOpt: Opts[Boolean] =
+    Opts.flag("populate", s"Populate database with dummy data", "pp").orFalse
+
   val mockModeOpt: Opts[Boolean] =
     Opts.flag("mock", s"Start server with in-memory DB", "mm").orFalse
 
   val server = Command("server", "Starts both gRPC and HTTP servers simultaneously") {
-    (forceMigrateOpt, mockModeOpt).mapN((m, mock) => UserCli.program(m, mock))
+    (forceMigrateOpt, mockModeOpt, populateOpt).mapN((m, mock, pop) => UserCli.program(m, mock, pop))
   }
 
   val all = Opts.subcommands(server)
