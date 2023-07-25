@@ -23,7 +23,7 @@ object Populate {
         hobbies.slice(0, i % hobbiesLength)
       )
     }
-  }
+  }.flatTap(v => IO.println(s"${v.length} users to populate"))
 
   private def getCSV: Vector[UserCSVRow] = {
     val rows = Vector.newBuilder[Array[String]]

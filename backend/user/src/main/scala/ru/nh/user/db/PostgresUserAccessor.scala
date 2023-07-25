@@ -1,17 +1,18 @@
 package ru.nh.user.db
 
-import cats.Reducible
-import cats.data.NonEmptyChain
+import cats.{Functor, Reducible}
+import cats.data.{NonEmptyChain, NonEmptyList}
 import cats.effect.std.UUIDGen
-import cats.effect.{ IO, Resource }
+import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import org.typelevel.log4cats.LoggerFactory
 import ru.nh.user.UserAccessor.UserRow
-import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
+import ru.nh.user.{RegisterUserCommand, User, UserAccessor}
 
+import java.time.LocalDate
 import java.util.UUID
 
 class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
@@ -68,6 +69,29 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
         .lastOrError <*
         NonEmptyChain.fromSeq(u.hobbies.map(h => (id, h))).traverse_(insertHobbies(_).update.run)
     }
+
+  private case class InsertUserRowRequest(userId: UUID, name: String,
+                                          surname: String,
+                                          age: Int,
+                                          city: String,
+                                          password: String,
+                                          gender: Option[String],
+                                          biography: Option[String],
+                                          birthdate: Option[LocalDate])
+  def saveBatch[R[_] : Reducible: Functor](u: R[RegisterUserCommand]): ConnectionIO[Unit] = {
+    val rows = u.map{c =>
+      val id = UUID.randomUUID()
+      (id, InsertUserRowRequest(id, c.name, c.surname, c.age, c.city, c.password, c.gender, c.biography, c.birthdate),c)
+    }
+
+    // Reducible guarantee that it's not empty
+    val hobbies = NonEmptyList.fromListUnsafe(rows.foldMap {case (id, _, c) => c.hobbies.map(s => (id, s))})
+
+    val sql = fr"INSERT INTO users(user_id, name, surname, age, city, password, gender, biography, birthdate)" ++
+      Fragments.values[R, InsertUserRowRequest](rows.map(_._2))
+
+    sql.update.run *> insertHobbies(hobbies).update.run.void
+  }
 
   def getUserRow(userId: UUID): ConnectionIO[Option[UserRow]] =
     getUserStatement(userId)

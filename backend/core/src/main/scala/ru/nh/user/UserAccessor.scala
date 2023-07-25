@@ -1,13 +1,15 @@
 package ru.nh.user
 
-import cats.~>
-import ru.nh.user.UserAccessor.{ UserAccessorMapK, UserRow }
+import cats.{Functor, Reducible, ~>}
+import ru.nh.user.UserAccessor.{UserAccessorMapK, UserRow}
 
-import java.time.{ Instant, LocalDate }
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 trait UserAccessor[F[_]] {
   def save(u: RegisterUserCommand): F[UserRow]
+
+  def saveBatch[R[_]: Reducible: Functor](u: R[RegisterUserCommand]): F[Unit]
   def getUserRow(userId: UUID): F[Option[UserRow]]
 
   def getUser(userId: UUID): F[Option[User]]
@@ -41,6 +43,9 @@ object UserAccessor {
       extends UserAccessor[G] {
     def save(u: RegisterUserCommand): G[UserRow] =
       write(underlying.save(u))
+
+    def saveBatch[R[_] : Reducible: Functor](u: R[RegisterUserCommand]): G[Unit] =
+      write(underlying.saveBatch(u))
 
     def getUserRow(userId: UUID): G[Option[UserRow]] =
       read(underlying.getUserRow(userId))

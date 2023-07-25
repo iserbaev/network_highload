@@ -1,9 +1,10 @@
 package ru.nh.user.inmemory
 
-import cats.effect.{ IO, Ref }
+import cats.{Functor, Reducible}
+import cats.effect.{IO, Ref}
 import cats.syntax.all._
 import ru.nh.user.UserAccessor.UserRow
-import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
+import ru.nh.user.{RegisterUserCommand, User, UserAccessor}
 
 import java.util.UUID
 
@@ -14,6 +15,9 @@ class InMemoryUserAccessor(users: Ref[IO, Map[UUID, UserRow]], hobbies: Ref[IO, 
       val userRow = UserRow(id, now, u.name, u.surname, u.age, u.city, u.password, u.gender, u.biography, u.birthdate)
       (users.update(_.updated(id, userRow)), hobbies.update(_.updated(id, u.hobbies))).tupled.as(userRow)
     }
+
+  def saveBatch[R[_]: Reducible: Functor](u: R[RegisterUserCommand]): IO[Unit] =
+    u.traverse_(save)
 
   def getUserRow(userId: UUID): IO[Option[UserRow]] =
     users.get.map(_.get(userId))

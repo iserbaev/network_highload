@@ -1,5 +1,6 @@
 package ru.nh.user.cli
 
+import cats.data.NonEmptyChain
 import cats.effect.{ ExitCode, IO }
 import cats.implicits._
 import com.monovore.decline._
@@ -42,7 +43,15 @@ object UserCli {
             )
 
         def populateProgram(userAccessor: UserAccessor[IO]): IO[Unit] =
-          Populate.getUsers.flatMap(_.traverse_(userAccessor.save)).whenA(populate)
+          Populate.getUsers
+            .flatMap(u =>
+              NonEmptyChain.fromSeq(u).traverse_ {
+                _.grouped(5000).toList.traverse_ { nec =>
+                  userAccessor.saveBatch(nec) <* IO.println(s"Populate users ${nec.length}")
+                }
+              }
+            )
+            .whenA(populate)
 
         val runProgram =
           MetricsModule
