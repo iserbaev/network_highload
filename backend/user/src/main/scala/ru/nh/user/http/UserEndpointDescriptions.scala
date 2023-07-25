@@ -66,6 +66,6 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
   val searchUserProfile: SecuredEndpoint[(String, String), User] =
     securedEndpoint.get
       .in("search")
-      .in(query[String]("firstName").and(query[String]("lastName")))
+      .in(query[String]("first_name").and(query[String]("last_name")))
       .out(jsonBody[User])
 }
