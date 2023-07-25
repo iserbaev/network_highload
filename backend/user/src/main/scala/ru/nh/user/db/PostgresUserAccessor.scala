@@ -42,7 +42,7 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   private def searchUserStatement(firstNamePrefix: String, lastNamePrefix: String): Fragment =
     sql"""SELECT user_id, created_at, name, surname, age, city, password, gender, biography, birthdate
          |FROM users
-         |WHERE name LIKE $firstNamePrefix AND surname LIKE $lastNamePrefix
+         |WHERE name LIKE ${firstNamePrefix + "%"} AND surname LIKE ${lastNamePrefix + "%"}
          """.stripMargin
 
   private def insertHobbies[R[_]: Reducible](h: R[(UUID, String)]): Fragment =
