@@ -16,7 +16,7 @@ import java.util.UUID
 
 class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   private def getUserStatement(userId: UUID): Fragment =
-    sql"""SELECT user_id, created_at, name, surname, age, gender, city, password
+    sql"""SELECT user_id, created_at, name, surname, age, city, password, gender, biography, birthdate
          |FROM users
          |WHERE user_id = $userId
          """.stripMargin
@@ -29,14 +29,21 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
 
   private def insertUser(id: UUID, u: RegisterUserCommand): Fragment =
     sql"""INSERT INTO users(
-         |             user_id, name, surname, age, gender, city, password
+         |             user_id, name, surname, age, city, password, gender, biography, birthdate
          |           )
          |   VALUES  (
          |             $id, ${u.name}, ${u.surname}, ${u.age},
-         |             ${u.gender}, ${u.city}, ${u.password}
+         |             ${u.city}, ${u.password}, ${u.gender},
+         |             ${u.biography}, ${u.birthdate}
          |           )
-         |RETURNING user_id, created_at, name, surname, age, gender, city, password            
+         |RETURNING user_id, created_at, name, surname, age, city, password, gender, biography, birthdate      
           """.stripMargin
+
+  private def searchUserStatement(firstNamePrefix: String, lastNamePrefix: String): Fragment =
+    sql"""SELECT user_id, created_at, name, surname, age, city, password, gender, biography, birthdate
+         |FROM users
+         |WHERE name LIKE $firstNamePrefix AND surname LIKE $lastNamePrefix
+         """.stripMargin
 
   private def insertHobbies[R[_]: Reducible](h: R[(UUID, String)]): Fragment =
     fr"INSERT INTO user_hobby(user_id, hobby)" ++
@@ -45,7 +52,18 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   def save(u: RegisterUserCommand): ConnectionIO[UserRow] =
     UUIDGen[ConnectionIO].randomUUID.flatMap { id =>
       insertUser(id, u).update
-        .withGeneratedKeys[UserRow]("user_id", "created_at", "name", "surname", "age", "gender", "city", "password")
+        .withGeneratedKeys[UserRow](
+          "user_id",
+          "created_at",
+          "name",
+          "surname",
+          "age",
+          "city",
+          "password",
+          "gender",
+          "biography",
+          "birthdate"
+        )
         .compile
         .lastOrError <*
         NonEmptyChain.fromSeq(u.hobbies.map(h => (id, h))).traverse_(insertHobbies(_).update.run)
@@ -61,6 +79,11 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
 
   def getUser(userId: UUID): ConnectionIO[Option[User]] =
     getUserRow(userId).flatMap(_.traverse(row => getHobbies(userId).map(row.toUser)))
+
+  def search(firstNamePrefix: String, lastNamePrefix: String): ConnectionIO[Option[UserRow]] =
+    searchUserStatement(firstNamePrefix, lastNamePrefix)
+      .query[UserRow]
+      .option
 }
 
 object PostgresUserAccessor {

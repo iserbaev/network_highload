@@ -8,32 +8,23 @@ final case class User(
     name: String,
     surname: String,
     age: Int,
-    gender: String,
-    hobbies: List[String],
-    city: String
-) {
-  def toUserProfile(birthdate: Option[LocalDate], biography: Option[String]) =
-    UserProfile(id, name, surname, age, birthdate, biography, city)
-}
+    city: String,
+    gender: Option[String],
+    birthdate: Option[LocalDate],
+    biography: Option[String],
+    hobbies: List[String]
+)
 
 final case class RegisterUserCommand(
     name: String,
     surname: String,
     age: Int,
-    gender: String,
-    hobbies: List[String],
     city: String,
-    password: String
+    password: String,
+    gender: Option[String],
+    birthdate: Option[LocalDate],
+    biography: Option[String],
+    hobbies: List[String]
 )
 
 final case class UserId(id: UUID)
-
-final case class UserProfile(
-    id: UUID,
-    first_name: String,
-    second_name: String,
-    age: Int,
-    birthdate: Option[LocalDate],
-    biography: Option[String],
-    city: String
-)

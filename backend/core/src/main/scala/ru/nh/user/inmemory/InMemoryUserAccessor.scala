@@ -11,7 +11,7 @@ class InMemoryUserAccessor(users: Ref[IO, Map[UUID, UserRow]], hobbies: Ref[IO, 
     extends UserAccessor[IO] {
   def save(u: RegisterUserCommand): IO[UserRow] =
     (IO.realTimeInstant, IO.randomUUID).flatMapN { (now, id) =>
-      val userRow = UserRow(id, now, u.name, u.surname, u.age, u.gender, u.city, u.password)
+      val userRow = UserRow(id, now, u.name, u.surname, u.age, u.city, u.password, u.gender, u.biography, u.birthdate)
       (users.update(_.updated(id, userRow)), hobbies.update(_.updated(id, u.hobbies))).tupled.as(userRow)
     }
 
@@ -23,4 +23,9 @@ class InMemoryUserAccessor(users: Ref[IO, Map[UUID, UserRow]], hobbies: Ref[IO, 
 
   def getHobbies(userId: UUID): IO[List[String]] =
     hobbies.get.map(_.getOrElse(userId, List.empty))
+
+  def search(firstNamePrefix: String, lastNamePrefix: String): IO[Option[UserRow]] =
+    users.get.map(
+      _.find { case (_, row) => row.name.contains(firstNamePrefix) && row.surname.contains(lastNamePrefix) }.map(_._2)
+    )
 }

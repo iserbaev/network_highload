@@ -13,6 +13,10 @@ class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) exte
   def get(id: UUID): IO[Option[User]] =
     accessor.getUser(id).flatTap(u => log.debug(s"For $id got $u"))
 
+  def search(firstNamePrefix: String, lastNamePrefix: String): IO[Option[User]] =
+    accessor
+      .search(firstNamePrefix, lastNamePrefix)
+      .flatMap(_.traverse(row => accessor.getHobbies(row.userId).map(row.toUser)))
 }
 
 object UserManager {

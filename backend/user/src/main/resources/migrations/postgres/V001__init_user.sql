@@ -5,9 +5,11 @@ CREATE TABLE IF NOT EXISTS users
     name       VARCHAR(128)              NOT NULL,
     surname    VARCHAR(128)              NOT NULL,
     age        INTEGER                   NOT NULL,
-    gender     VARCHAR(128)              NOT NULL,
     city       VARCHAR(128)              NOT NULL,
-    password   VARCHAR(256)              NOT NULL
+    password   VARCHAR(256)              NOT NULL,
+    gender     VARCHAR(128),
+    biography  TEXT,
+    birthdate  DATE
 );
 
 CREATE TABLE IF NOT EXISTS user_hobby

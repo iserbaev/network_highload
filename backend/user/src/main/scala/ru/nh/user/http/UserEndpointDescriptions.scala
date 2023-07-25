@@ -5,7 +5,7 @@ import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.{ RegisterUserCommand, UserId, UserProfile }
+import ru.nh.user.{ RegisterUserCommand, User, UserId }
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
@@ -57,10 +57,15 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in(jsonBody[RegisterUserCommand])
       .out(jsonBody[UserId])
 
-  val getUserProfile: SecuredEndpoint[UUID, UserProfile] =
+  val getUserProfile: SecuredEndpoint[UUID, User] =
     securedEndpoint.get
       .in("get")
       .in(path[UUID]("id"))
-      .out(jsonBody[UserProfile])
+      .out(jsonBody[User])
 
+  val searchUserProfile: SecuredEndpoint[(String, String), User] =
+    securedEndpoint.get
+      .in("search")
+      .in(query[String]("firstName").and(query[String]("lastName")))
+      .out(jsonBody[User])
 }

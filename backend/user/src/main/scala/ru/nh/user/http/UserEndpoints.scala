@@ -39,11 +39,27 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
           }.flatMap {
-            case Some(user) => user.toUserProfile(none, none).asRight
+            case Some(user) => user.asRight
             case None       => (StatusCode.NotFound, none).asLeft
           }
         }
     }
 
-  val all = NonEmptyList.of(registerUser, getUserProfile)
+  val searchUserProfile: SEndpoint = userEndpointDescriptions.searchUserProfile
+    .serverLogic { auth => firstNamePrefixAndLastNamePrefix =>
+      userService
+        .search(firstNamePrefixAndLastNamePrefix._1, firstNamePrefixAndLastNamePrefix._2)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap {
+            case Some(user) => user.asRight
+            case None       => (StatusCode.NotFound, none).asLeft
+          }
+        }
+    }
+
+  val all = NonEmptyList.of(registerUser, getUserProfile, searchUserProfile)
 }
