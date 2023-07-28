@@ -1,82 +1,138 @@
 package ru.nh.db.doobie
 
-import cats.effect.{ IO, Resource }
+import cats.arrow.FunctionK
+import cats.effect.{ IO, Resource, Temporal }
 import cats.syntax.all._
+import cats.~>
 import com.zaxxer.hikari.metrics.MetricsTrackerFactory
 import doobie._
-import doobie.hikari.HikariTransactor
-import org.typelevel.log4cats.{ Logger, LoggerFactory }
-import ru.nh.user.db.flyway.{ FlywaySupport, MixedTransactions }
-import ru.nh.user.db.jdbc.JdbcSupport
+import org.typelevel.log4cats.Logger
+import ru.nh.db.jdbc.JdbcSupport
+import ru.nh.db.jdbc.JdbcSupport.PoolConfig
 
+import scala.annotation.unused
 import scala.concurrent.duration.FiniteDuration
-object DoobieSupport extends DoobieTransformations with RetrySupport {
-  final case class DBSettings(
-      database: Database,
-      read: JdbcSupport.PoolConfig,
-      write: JdbcSupport.PoolConfig,
-      metrics: HikariMetrics,
-      socketTimeout: FiniteDuration,
-      keepAliveTimeout: FiniteDuration,
-      transactionRetry: TransactionRetryConfig
-  )
-  final case class Database(
+
+object DoobieSupport extends RetrySupport {
+  final case class TransactorSettings private (
       connection: JdbcSupport.ConnectionConfig,
-      migrations: DbMigrations
-  )
+      pool: JdbcSupport.PoolConfig,
+      transactionRetry: TransactionRetryConfig
+  ) {
+    def withConnection(connection: JdbcSupport.ConnectionConfig): TransactorSettings = copy(connection = connection)
+    def withPool(pool: PoolConfig): TransactorSettings                               = copy(pool = pool)
+    def withTransactionRetry(transactionRetry: TransactionRetryConfig): TransactorSettings =
+      copy(transactionRetry = transactionRetry)
 
-  final case class TransactionRetryConfig(retryCount: Int, baseInterval: FiniteDuration)
-
-  final case class DbMigrations(locations: List[String], mixed: MixedTransactions)
-
-  final case class HikariMetrics(enabled: Boolean)
-
-  final case class Transactors(write: Transactor[IO], read: Transactor[IO])
-
-  def buildTransactors(
-      config: DBSettings,
-      poolNamePrefix: String,
-      metricsTrackerFactory: MetricsTrackerFactory,
-      logger: Logger[IO],
-  ): Resource[IO, Transactors] = {
-    def buildTransactor(poolName: String, pool: JdbcSupport.PoolConfig): Resource[IO, HikariTransactor[IO]] =
-      JdbcSupport.buildHikariTransactor(config.database.connection, pool, poolName, logger) { hikariConfig =>
-        if (config.metrics.enabled) JdbcSupport.withMetrics(metricsTrackerFactory)(hikariConfig): Unit
-        hikariConfig.addDataSourceProperty("socketTimeout", config.socketTimeout.toMillis)
-        hikariConfig.setKeepaliveTime(config.keepAliveTimeout.toMillis)
-        hikariConfig.setConnectionTestQuery("SELECT 1")
-        hikariConfig
-      }
-
-    (
-      buildTransactor(poolNamePrefix ++ "WritePool", config.write),
-      buildTransactor(poolNamePrefix ++ "ReadPool", config.read)
-    ).mapN(Transactors)
   }
 
-  def migrate(dbConfig: DBSettings)(
-      implicit L: LoggerFactory[IO]
-  ): IO[Unit] =
-    L.fromClass(classOf[DoobieSupport.type]).flatMap { implicit log =>
-      FlywaySupport
-        .migrate(
-          dbConfig.database.connection,
-          dbConfig.database.migrations.locations,
-          dbConfig.database.migrations.mixed
-        )
-        .void
-    }
+  object TransactorSettings {
+    def apply(
+        connection: JdbcSupport.ConnectionConfig,
+        pool: JdbcSupport.PoolConfig,
+        transactionRetry: TransactionRetryConfig
+    ): TransactorSettings =
+      new TransactorSettings(connection, pool, transactionRetry)
 
-  def validate(dbConfig: DBSettings)(
-      implicit L: LoggerFactory[IO]
-  ): IO[Unit] =
-    L.fromClass(classOf[DoobieSupport.type]).flatMap { implicit log =>
-      FlywaySupport
-        .validate(
-          dbConfig.database.connection,
-          dbConfig.database.migrations.locations,
-          dbConfig.database.migrations.mixed
-        )
-        .void
-    }
+    @unused
+    private def unapply(c: TransactorSettings): TransactorSettings = c
+  }
+
+  final case class TransactionRetryConfig private (retryCount: Int, baseInterval: FiniteDuration) {
+    def withRetryCount(retryCount: Int): TransactionRetryConfig                = copy(retryCount = retryCount)
+    def withBaseInterval(baseInterval: FiniteDuration): TransactionRetryConfig = copy(baseInterval = baseInterval)
+  }
+  object TransactionRetryConfig {
+    def apply(retryCount: Int, baseInterval: FiniteDuration): TransactionRetryConfig =
+      new TransactionRetryConfig(retryCount, baseInterval)
+
+    @unused
+    private def unapply(c: TransactionRetryConfig): TransactionRetryConfig = c
+  }
+
+  final case class DoobieTransactor[F[_]](xa: Transactor[F], retryConfig: TransactionRetryConfig, readOnly: Boolean) {
+    def read[A](cio: ConnectionIO[A])(implicit logger: Logger[F], F: Temporal[F]): F[A] =
+      retryConnection(cio)(
+        xa,
+        retryConfig.retryCount,
+        retryConfig.baseInterval
+      )(defaultTransactionRetryCondition)
+
+    def write[A](cio: ConnectionIO[A])(implicit logger: Logger[F], F: Temporal[F]): F[A] =
+      F.raiseError(new NotImplementedError()).whenA(readOnly) *>
+        retryConnection(cio)(
+          xa,
+          retryConfig.retryCount,
+          retryConfig.baseInterval
+        )(defaultTransactionRetryCondition)
+
+    def readTx(implicit logger: Logger[F], F: Temporal[F]): ConnectionIO ~> F =
+      new FunctionK[ConnectionIO, F] {
+        def apply[A](fa: ConnectionIO[A]): F[A] =
+          read(fa)
+      }
+
+    def writeTx(implicit logger: Logger[F], F: Temporal[F]): ConnectionIO ~> F =
+      new FunctionK[ConnectionIO, F] {
+        def apply[A](fa: ConnectionIO[A]): F[A] =
+          write(fa)
+      }
+
+  }
+
+  final case class ReadWriteTransactors[F[_]](
+      read: DoobieTransactor[F],
+      write: DoobieTransactor[F]
+  )
+
+  def buildMeteredTransactor(
+      db: TransactorSettings,
+      poolName: String,
+      metricsTrackerFactory: MetricsTrackerFactory,
+      readOnly: Boolean
+  )(
+      implicit logger: Logger[IO]
+  ): Resource[IO, DoobieTransactor[IO]] =
+    JdbcSupport
+      .buildHikariTransactor(db.connection, db.pool, poolName, logger) { conf =>
+        JdbcSupport.withMetrics(metricsTrackerFactory)(conf): Unit
+        conf.setReadOnly(readOnly)
+        conf
+      }
+      .map(DoobieTransactor(_, db.transactionRetry, readOnly))
+
+  def buildTransactor(db: TransactorSettings, poolName: String, readOnly: Boolean)(
+      implicit logger: Logger[IO]
+  ): Resource[IO, DoobieTransactor[IO]] =
+    JdbcSupport
+      .buildHikariTransactor(db.connection, db.pool, poolName, logger) { conf =>
+        conf.setReadOnly(readOnly)
+        conf
+      }
+      .map(DoobieTransactor(_, db.transactionRetry, readOnly))
+
+  def buildReadWriteTransactors(
+      read: TransactorSettings,
+      write: TransactorSettings,
+      poolNamePrefix: String
+  )(
+      implicit logger: Logger[IO]
+  ): Resource[IO, ReadWriteTransactors[IO]] =
+    (
+      buildTransactor(read, poolNamePrefix ++ "ReadPool", readOnly = true),
+      buildTransactor(write, poolNamePrefix ++ "WritePool", readOnly = false)
+    ).mapN((readXa, writeXa) => ReadWriteTransactors(readXa, writeXa))
+
+  def buildMeteredReadWriteTransactors(
+      read: TransactorSettings,
+      write: TransactorSettings,
+      poolNamePrefix: String,
+      metricsTrackerFactory: MetricsTrackerFactory
+  )(
+      implicit logger: Logger[IO]
+  ): Resource[IO, ReadWriteTransactors[IO]] =
+    (
+      buildMeteredTransactor(read, poolNamePrefix ++ "ReadPool", metricsTrackerFactory, readOnly = true),
+      buildMeteredTransactor(write, poolNamePrefix ++ "WritePool", metricsTrackerFactory, readOnly = false)
+    ).mapN((readXa, writeXa) => ReadWriteTransactors(readXa, writeXa))
 }

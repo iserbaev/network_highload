@@ -1,4 +1,4 @@
-package ru.nh.user.db.jdbc
+package ru.nh.db.jdbc
 
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
@@ -9,7 +9,7 @@ import doobie.util.log.LogHandler
 import org.typelevel.log4cats.Logger
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto._
-import ru.nh.user.db.flyway.FlywaySupport
+import ru.nh.db.flyway.FlywaySupport
 
 import scala.annotation.unused
 import scala.concurrent.duration._

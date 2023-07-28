@@ -9,21 +9,23 @@ object Populate {
   private val hobbies       = List("books", "sport", "chess", "games", "nature", "sea")
   private val hobbiesLength = hobbies.length
 
-  def getUsers: IO[Vector[RegisterUserCommand]] = IO.blocking {
-    getCSV.zipWithIndex.map { case (u, i) =>
-      RegisterUserCommand(
-        u.firstName,
-        u.lastName,
-        u.age,
-        u.city,
-        u.firstName + u.age,
-        None,
-        None,
-        None,
-        hobbies.slice(0, i % hobbiesLength)
-      )
+  def getUsers: IO[Vector[RegisterUserCommand]] = IO
+    .blocking {
+      getCSV.zipWithIndex.map { case (u, i) =>
+        RegisterUserCommand(
+          u.firstName,
+          u.lastName,
+          u.age,
+          u.city,
+          u.firstName + u.age,
+          None,
+          None,
+          None,
+          hobbies.slice(0, i % hobbiesLength)
+        )
+      }
     }
-  }.flatTap(v => IO.println(s"${v.length} users to populate"))
+    .flatTap(v => IO.println(s"${v.length} users to populate"))
 
   private def getCSV: Vector[UserCSVRow] = {
     val rows = Vector.newBuilder[Array[String]]

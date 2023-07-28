@@ -1,4 +1,4 @@
-package ru.nh.user.db.flyway
+package ru.nh.db.flyway
 
 import cats.effect.IO
 import cats.syntax.all._

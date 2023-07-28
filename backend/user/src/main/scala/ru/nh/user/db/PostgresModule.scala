@@ -7,33 +7,45 @@ import doobie.Transactor
 import doobie.implicits._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.db.doobie.DoobieSupport
-import ru.nh.db.doobie.DoobieSupport.{ DBSettings, Transactors, buildTransactors }
+import ru.nh.db.doobie.DoobieSupport.ReadWriteTransactors
+import ru.nh.db.flyway.MixedTransactions
 
-final class PostgresModule(val db: DoobieSupport.DBSettings, val write: Transactor[IO], val read: Transactor[IO])(
+final class PostgresModule(val config: PostgresModule.Config, val rw: ReadWriteTransactors[IO])(
     implicit log: Logger[IO]
 ) {
   val healthCheck: IO[Unit] =
-    log.trace(show"Checking health of Postgres at '${db.database.connection.jdbcUrl}' ...") *>
-      (PostgresModule.checkFullScan(read), PostgresModule.getTables(read)).flatMapN { (fullScanQueries, ourTables) =>
-        fullScanQueries
-          .filterNot(q => q.relname.contains("pg"))
-          .filter(q => ourTables.contains(q.relname))
-          .traverse_ { checkResult =>
-            log
-              .info(s"Detected sequential scan query in " ++ checkResult.relname)
-              .whenA(checkResult.isFullScan)
-          }
+    log.trace(show"Checking health of Postgres at '${config.read.connection.jdbcUrl}' ...") *>
+      (PostgresModule.checkFullScan(rw.read.xa), PostgresModule.getTables(rw.read.xa)).flatMapN {
+        (fullScanQueries, ourTables) =>
+          fullScanQueries
+            .filterNot(q => q.relname.contains("pg"))
+            .filter(q => ourTables.contains(q.relname))
+            .traverse_ { checkResult =>
+              log
+                .info(s"Detected sequential scan query in " ++ checkResult.relname)
+                .whenA(checkResult.isFullScan)
+            }
       }
 
 }
 object PostgresModule {
-  def apply(config: DBSettings, metricsTrackerFactory: MetricsTrackerFactory)(
+  final case class Config(
+      read: DoobieSupport.TransactorSettings,
+      write: DoobieSupport.TransactorSettings,
+      migrations: Migrations,
+      metricsEnabled: Boolean
+  )
+
+  final case class Migrations(locations: List[String], mixed: MixedTransactions)
+
+  def apply(config: Config, metricsTrackerFactory: MetricsTrackerFactory)(
       implicit L: LoggerFactory[IO]
-  ): Resource[IO, Transactors] =
+  ): Resource[IO, PostgresModule] =
     Resource.eval(L.fromClass(classOf[PostgresModule])).flatMap { implicit log =>
-      buildTransactors(config, "Postgres", metricsTrackerFactory, log)
-        .evalTap { transactors =>
-          IO(new PostgresModule(config, transactors.write, transactors.read))
+      DoobieSupport
+        .buildMeteredReadWriteTransactors(config.read, config.write, "Postgres", metricsTrackerFactory)
+        .evalMap { transactors =>
+          IO(new PostgresModule(config, transactors))
         }
     }
 

@@ -6,15 +6,15 @@ import cats.implicits._
 import com.monovore.decline._
 import com.monovore.decline.effect.CommandIOApp
 import io.prometheus.client.CollectorRegistry
-import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
+import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-import ru.nh.db.doobie.DoobieSupport
-import ru.nh.user.{ UserAccessor, UserModule }
-import ru.nh.user.db.Populate
+import ru.nh.db.flyway.FlywaySupport
+import ru.nh.user.db.{ Populate, PostgresModule }
 import ru.nh.user.http.HttpModule
 import ru.nh.user.metrics.MetricsModule
+import ru.nh.user.{ UserAccessor, UserModule }
 
 object UserServiceCli
     extends CommandIOApp(
@@ -33,13 +33,17 @@ object UserCli {
         ConfigSource.default.load[Config].leftMap(fails => new RuntimeException(fails.prettyPrint())).toTry
       )
       .flatMap { config =>
-        implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
+        implicit val loggerFactory: LoggerFactory[IO]      = Slf4jFactory.create[IO]
+        implicit val logger: SelfAwareStructuredLogger[IO] = loggerFactory.getLoggerFromClass(classOf[UserCli.type])
 
         val migrateOrValidate =
           IO.pure(migrate)
             .ifM(
-              ifTrue = DoobieSupport.migrate(config.user.db),
-              ifFalse = DoobieSupport.validate(config.user.db)
+              ifTrue = FlywaySupport
+                .migrate(config.db.write.connection, config.db.migrations.locations, config.db.migrations.mixed)
+                .void,
+              ifFalse = FlywaySupport
+                .validate(config.db.write.connection, config.db.migrations.locations, config.db.migrations.mixed)
             )
 
         def populateProgram(userAccessor: UserAccessor[IO]): IO[Unit] =
@@ -56,9 +60,10 @@ object UserCli {
         val runProgram =
           MetricsModule
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
-            .flatMap(m => UserModule(config.user, m).tupleLeft(m))
-            .flatMap { case (m, u) =>
-              HttpModule.resource(config.http, u, m).evalTap(_ => populateProgram(u.accessor))
+            .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
+            .flatMap { case (m, pg) =>
+              UserModule(pg)
+                .flatMap(u => HttpModule.resource(config.http, u, m).evalTap(_ => populateProgram(u.accessor)))
             }
 
         migrateOrValidate.unlessA(mock) *> runProgram.useForever

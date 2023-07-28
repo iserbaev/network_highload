@@ -1,4 +1,4 @@
-package ru.nh.user.db.jdbc
+package ru.nh.db.jdbc
 
 import cats.Defer
 import doobie.util.log._

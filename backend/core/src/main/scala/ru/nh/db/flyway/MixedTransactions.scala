@@ -1,4 +1,4 @@
-package ru.nh.user.db.flyway
+package ru.nh.db.flyway
 
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto._
