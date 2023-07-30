@@ -11,7 +11,6 @@ import pureconfig.ConfigReader
 import pureconfig.generic.semiauto._
 import ru.nh.db.flyway.FlywaySupport
 
-import scala.annotation.unused
 import scala.concurrent.duration._
 
 object JdbcSupport extends JdbcSupport {
@@ -21,20 +20,7 @@ object JdbcSupport extends JdbcSupport {
       jdbcUrl: String,
       user: String,
       password: String,
-  ) extends FlywaySupport.DataSourceConfig {
-    def withJdbcDriverName(jdbcDriverName: String): ConnectionConfig = copy(jdbcDriverName = jdbcDriverName)
-    def withJdbcUrl(jdbcUrl: String): ConnectionConfig               = copy(jdbcUrl = jdbcUrl)
-    def withUser(user: String): ConnectionConfig                     = copy(user = user)
-    def withPassword(password: String): ConnectionConfig             = copy(password = password)
-  }
-
-  object ConnectionConfig {
-    def apply(jdbcDriverName: String, jdbcUrl: String, user: String, password: String): ConnectionConfig =
-      new ConnectionConfig(jdbcDriverName, jdbcUrl, user, password)
-
-    @unused
-    private def unapply(c: ConnectionConfig): ConnectionConfig = c
-  }
+  ) extends FlywaySupport.DataSourceConfig
 
   final case class PoolConfig private (
       connectionMaxPoolSize: Int,
@@ -45,98 +31,7 @@ object JdbcSupport extends JdbcSupport {
       leakDetectionThreshold: Option[FiniteDuration],
       socketTimeout: Option[FiniteDuration],
       keepAliveTimeout: Option[FiniteDuration]
-  ) {
-    def withConnectionMaxPoolSize(connectionMaxPoolSize: Int): PoolConfig =
-      copy(connectionMaxPoolSize = connectionMaxPoolSize)
-    def withConnectionIdlePoolSize(connectionIdlePoolSize: Int): PoolConfig =
-      copy(connectionIdlePoolSize = connectionIdlePoolSize)
-    def withConnectionTimeout(connectionTimeout: FiniteDuration): PoolConfig =
-      copy(connectionTimeout = connectionTimeout)
-    def withConnectionIdleTimeout(connectionIdleTimeout: Option[FiniteDuration]): PoolConfig =
-      copy(connectionIdleTimeout = connectionIdleTimeout)
-    def withConnectionMaxLifetime(connectionMaxLifetime: Option[FiniteDuration]): PoolConfig =
-      copy(connectionMaxLifetime = connectionMaxLifetime)
-    def withLeakDetectionThreshold(leakDetectionThreshold: Option[FiniteDuration]): PoolConfig =
-      copy(leakDetectionThreshold = leakDetectionThreshold)
-    def withSocketTimeout(socketTimeout: Option[FiniteDuration]): PoolConfig =
-      copy(socketTimeout = socketTimeout)
-    def withKeepAliveTimeout(keepAliveTimeout: Option[FiniteDuration]): PoolConfig =
-      copy(keepAliveTimeout = keepAliveTimeout)
-  }
-
-  object PoolConfig {
-    def apply(leakDetectionThreshold: Option[FiniteDuration]): PoolConfig = PoolConfig(
-      connectionMaxPoolSize = 8,
-      connectionIdlePoolSize = 1,
-      connectionTimeout = 1.minute,
-      connectionIdleTimeout = none,
-      connectionMaxLifetime = none,
-      leakDetectionThreshold,
-    )
-
-    def apply(
-        connectionMaxPoolSize: Int,
-        connectionIdlePoolSize: Int,
-        connectionTimeout: FiniteDuration,
-        connectionIdleTimeout: Option[FiniteDuration],
-        connectionMaxLifetime: Option[FiniteDuration],
-        leakDetectionThreshold: Option[FiniteDuration]
-    ): PoolConfig =
-      new PoolConfig(
-        connectionMaxPoolSize,
-        connectionIdlePoolSize,
-        connectionTimeout,
-        connectionIdleTimeout,
-        connectionMaxLifetime,
-        leakDetectionThreshold,
-        none,
-        none
-      )
-
-    def apply(
-        connectionMaxPoolSize: Int,
-        connectionIdlePoolSize: Int,
-        connectionTimeout: FiniteDuration,
-        connectionIdleTimeout: Option[FiniteDuration],
-        connectionMaxLifetime: Option[FiniteDuration],
-        leakDetectionThreshold: Option[FiniteDuration],
-        socketTimeout: Option[FiniteDuration]
-    ): PoolConfig =
-      new PoolConfig(
-        connectionMaxPoolSize,
-        connectionIdlePoolSize,
-        connectionTimeout,
-        connectionIdleTimeout,
-        connectionMaxLifetime,
-        leakDetectionThreshold,
-        socketTimeout,
-        none
-      )
-
-    def apply(
-        connectionMaxPoolSize: Int,
-        connectionIdlePoolSize: Int,
-        connectionTimeout: FiniteDuration,
-        connectionIdleTimeout: Option[FiniteDuration],
-        connectionMaxLifetime: Option[FiniteDuration],
-        leakDetectionThreshold: Option[FiniteDuration],
-        socketTimeout: Option[FiniteDuration],
-        keepAliveTimeout: Option[FiniteDuration]
-    ): PoolConfig =
-      new PoolConfig(
-        connectionMaxPoolSize,
-        connectionIdlePoolSize,
-        connectionTimeout,
-        connectionIdleTimeout,
-        connectionMaxLifetime,
-        leakDetectionThreshold,
-        socketTimeout,
-        keepAliveTimeout
-      )
-
-    @unused
-    private def unapply(p: PoolConfig): PoolConfig = p
-  }
+  )
 
   implicit val PoolConfigReader: ConfigReader[PoolConfig]             = deriveReader[PoolConfig]
   implicit val ConnectionConfigReader: ConfigReader[ConnectionConfig] = deriveReader[ConnectionConfig]

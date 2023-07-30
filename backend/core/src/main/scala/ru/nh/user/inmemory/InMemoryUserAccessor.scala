@@ -1,8 +1,8 @@
 package ru.nh.user.inmemory
 
-import cats.{ Functor, Reducible }
 import cats.effect.{ IO, Ref }
 import cats.syntax.all._
+import cats.{ Functor, Reducible }
 import ru.nh.user.UserAccessor.UserRow
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 

@@ -1,10 +1,10 @@
 package ru.nh.user.db
 
-import cats.{ Functor, Reducible }
 import cats.data.{ NonEmptyChain, NonEmptyList }
 import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
+import cats.{ Functor, Reducible }
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._

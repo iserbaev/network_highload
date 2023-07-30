@@ -8,9 +8,7 @@ import com.zaxxer.hikari.metrics.MetricsTrackerFactory
 import doobie._
 import org.typelevel.log4cats.Logger
 import ru.nh.db.jdbc.JdbcSupport
-import ru.nh.db.jdbc.JdbcSupport.PoolConfig
 
-import scala.annotation.unused
 import scala.concurrent.duration.FiniteDuration
 
 object DoobieSupport extends RetrySupport {
@@ -18,37 +16,9 @@ object DoobieSupport extends RetrySupport {
       connection: JdbcSupport.ConnectionConfig,
       pool: JdbcSupport.PoolConfig,
       transactionRetry: TransactionRetryConfig
-  ) {
-    def withConnection(connection: JdbcSupport.ConnectionConfig): TransactorSettings = copy(connection = connection)
-    def withPool(pool: PoolConfig): TransactorSettings                               = copy(pool = pool)
-    def withTransactionRetry(transactionRetry: TransactionRetryConfig): TransactorSettings =
-      copy(transactionRetry = transactionRetry)
+  )
 
-  }
-
-  object TransactorSettings {
-    def apply(
-        connection: JdbcSupport.ConnectionConfig,
-        pool: JdbcSupport.PoolConfig,
-        transactionRetry: TransactionRetryConfig
-    ): TransactorSettings =
-      new TransactorSettings(connection, pool, transactionRetry)
-
-    @unused
-    private def unapply(c: TransactorSettings): TransactorSettings = c
-  }
-
-  final case class TransactionRetryConfig private (retryCount: Int, baseInterval: FiniteDuration) {
-    def withRetryCount(retryCount: Int): TransactionRetryConfig                = copy(retryCount = retryCount)
-    def withBaseInterval(baseInterval: FiniteDuration): TransactionRetryConfig = copy(baseInterval = baseInterval)
-  }
-  object TransactionRetryConfig {
-    def apply(retryCount: Int, baseInterval: FiniteDuration): TransactionRetryConfig =
-      new TransactionRetryConfig(retryCount, baseInterval)
-
-    @unused
-    private def unapply(c: TransactionRetryConfig): TransactionRetryConfig = c
-  }
+  final case class TransactionRetryConfig private (retryCount: Int, baseInterval: FiniteDuration)
 
   final case class DoobieTransactor[F[_]](xa: Transactor[F], retryConfig: TransactionRetryConfig, readOnly: Boolean) {
     def read[A](cio: ConnectionIO[A])(implicit logger: Logger[F], F: Temporal[F]): F[A] =
