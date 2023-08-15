@@ -82,6 +82,11 @@ trait JdbcSupport extends FlywaySupport {
     hc
   }
 
+  def withReadOnly(ro: Boolean): HikariConfig => HikariConfig = { hc =>
+    hc.setReadOnly(ro)
+    hc
+  }
+
   def makeHikariConfig(connection: ConnectionConfig, pool: PoolConfig, poolName: String): IO[HikariConfig] = IO {
     val conf = new HikariConfig()
 

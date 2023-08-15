@@ -302,11 +302,13 @@ object Dependencies {
   )
 
   val common = Def.setting(
-    caseInsensitive ++
+    caffeine ++
+      caseInsensitive ++
       catsCore ++ catsKernel ++
       catsEffect ++ catsEffectKernel ++ catsEffectStd ++
       fs2Core ++ fs2Io ++
       log4CatsCore ++ log4CatsNoop ++
+      scalaJava8Compat ++
       scodecBits ++
       squants
   )

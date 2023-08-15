@@ -118,7 +118,8 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
 }
 
 object PostgresUserAccessor {
-  import ru.nh.db.doobie.DoobieSupport._
+  import ru.nh.db.transactors._
+  import ru.nh.db.transactors.syntax._
   def resource(implicit L: LoggerFactory[IO]): Resource[IO, PostgresUserAccessor] = Resource.eval {
     L.fromClass(classOf[PostgresUserAccessor]).map { _ =>
       new PostgresUserAccessor
@@ -129,7 +130,7 @@ object PostgresUserAccessor {
       implicit L: LoggerFactory[IO]
   ): Resource[IO, UserAccessor[IO]] = Resource.suspend {
     L.fromClass(classOf[PostgresUserAccessor]).map { implicit log =>
-      PostgresUserAccessor.resource.map(_.mapK(rw.read.readTx, rw.write.writeTx))
+      PostgresUserAccessor.resource.map(_.mapK(rw.readK, rw.writeK))
     }
   }
 }

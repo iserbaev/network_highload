@@ -1,4 +1,4 @@
-package ru.nh.db.doobie
+package ru.nh.db.transactors
 
 import cats.Applicative
 import cats.effect.Temporal
@@ -14,19 +14,26 @@ import retry.syntax.all._
 import java.sql.{ SQLException, SQLTransientConnectionException }
 import scala.concurrent.duration.FiniteDuration
 
-trait RetrySupport {
-  private[doobie] def transactionRetrySqlStateCondition[F[_]: Applicative]: PartialFunction[Throwable, F[Boolean]] = {
-    case ex: SQLException =>
-      Option(ex.getSQLState).contains(RetrySqlStateCode).pure[F]
+object RetrySupport {
+  private[transactors] def transactionRetrySqlStateCondition[F[_]: Applicative]
+      : PartialFunction[Throwable, F[Boolean]] = { case ex: SQLException =>
+    Option(ex.getSQLState).contains(RetrySqlStateCode).pure[F]
   }
 
-  private[doobie] def transactionConnectionFailureCondition[F[_]: Applicative]
+  private[transactors] def transactionConnectionFailureCondition[F[_]: Applicative]
       : PartialFunction[Throwable, F[Boolean]] = { case ex: SQLTransientConnectionException =>
     Option(ex.getSQLState).contains(ConnectionFailureCode).pure[F]
   }
 
+  private[transactors] def notFoundFailureCondition[F[_]: Applicative]: PartialFunction[Throwable, F[Boolean]] = {
+    case _: NoSuchElementException =>
+      true.pure[F]
+  }
+
   def defaultTransactionRetryCondition[F[_]: Applicative]: PartialFunction[Throwable, F[Boolean]] =
-    transactionRetrySqlStateCondition[F].orElse(transactionConnectionFailureCondition[F])
+    transactionRetrySqlStateCondition[F]
+      .orElse(transactionConnectionFailureCondition[F])
+      .orElse(notFoundFailureCondition[F])
 
   def retryConnection[F[_], A](fa: ConnectionIO[A])(xa: Transactor[F], retryCount: Int, baseInterval: FiniteDuration)(
       retryWhen: PartialFunction[Throwable, F[Boolean]]
@@ -63,26 +70,13 @@ trait RetrySupport {
       }
     )
 
-  private[doobie] def invariantHandlers[A]: PartialFunction[Throwable, ConnectionIO[A]] = {
-    case UnexpectedEnd      => FC.raiseError(new NoSuchElementException(s"Queried element not found"))
+  private[transactors] def invariantHandlers[A]: PartialFunction[Throwable, ConnectionIO[A]] = {
+    case UnexpectedEnd      => FC.raiseError(new NoSuchElementException("Queried element not found"))
     case ex: InvalidEnum[_] => FC.raiseError(new IllegalArgumentException(s"Enum variant not found: ${ex.getMessage}"))
     case ex: InvalidOrdinal[_] =>
       FC.raiseError(new IllegalArgumentException(s"Enum ordinal not found: ${ex.getMessage}"))
     case ex: InvalidValue[_, _] =>
       FC.raiseError(new IllegalArgumentException(s"Query value is invalid: ${ex.getMessage}"))
-  }
-
-  private[doobie] def logSqlException[F[_]](e: Throwable)(implicit logger: Logger[F]): F[Unit] = e match {
-    case e: SQLException =>
-      logger.warn(e) {
-        s"${e.getClass.getSimpleName} caught in transaction" ++
-          s" with message '${e.getMessage}'" ++
-          s" for SQL state: ${e.getSQLState}."
-      }
-    case other =>
-      logger.warn(other) {
-        s"${other.getClass.getSimpleName} caught in transaction: ${other.getMessage}"
-      }
   }
 
 }
