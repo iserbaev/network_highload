@@ -1,16 +1,16 @@
 package ru.nh.user.db
 
-import cats.data.{Chain, NonEmptyChain, NonEmptyList, OptionT}
-import cats.effect.{IO, Resource}
+import cats.data.{ Chain, NonEmptyChain, NonEmptyList, OptionT }
+import cats.effect.{ IO, Resource }
 import cats.syntax.all._
-import cats.{Functor, NonEmptyTraverse, Reducible}
-import fs2.Stream
+import cats.{ Functor, NonEmptyTraverse, Reducible }
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
+import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
-import ru.nh.user.UserAccessor.{PostRow, UserRow}
-import ru.nh.user.{RegisterUserCommand, User, UserAccessor}
+import ru.nh.user.UserAccessor.{ PostRow, UserRow }
+import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
 import java.time.LocalDate
 import java.util.UUID
@@ -195,14 +195,12 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[ConnectionIO, PostRow] =
     sql"""SELECT user_id, post_id, index, created_at, text
          |FROM posts p
-         |WHERE p.user_id = $userId
-         |AND p.index > $fromIndex
+         |WHERE ${Fragments.in(fr"p.user_id", userIds)}
+         |AND p.index > $lastIndex
          |ORDER BY index
          |LIMIT 100""".stripMargin
       .query[PostRow]
-      .to[List]
-      .map(Chain.fromSeq)
-
+      .stream
 
   def getLastPost(userId: UUID): OptionT[ConnectionIO, PostRow] = OptionT {
     sql"""SELECT user_id, post_id, index, created_at, text

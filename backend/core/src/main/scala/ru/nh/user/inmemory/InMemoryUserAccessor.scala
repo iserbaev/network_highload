@@ -5,9 +5,9 @@ import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Ref }
 import cats.syntax.all._
 import cats.{ Functor, NonEmptyTraverse, Reducible }
+import fs2.Stream
 import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
-import fs2.Stream
 
 import java.util.UUID
 import scala.collection.SortedSet
@@ -94,7 +94,7 @@ class InMemoryUserAccessor(
     }
 
   def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[IO, PostRow] =
-    Stream.evalSeq(IO(userIds.toList)).flatMap(id => Stream.evalSeq(userPosts(id, lastIndex)))
+    Stream.evalSeq(IO(userIds.toList)).flatMap(id => Stream.evalSeq(userPosts(id, lastIndex).map(_.toList)))
 
   def getLastPost(userId: UUID): OptionT[IO, PostRow] =
     OptionT {

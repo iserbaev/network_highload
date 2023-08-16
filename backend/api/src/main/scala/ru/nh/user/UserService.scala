@@ -1,7 +1,8 @@
 package ru.nh.user
 
-import cats.data.Chain
-import cats.effect.IO
+import cats.effect.{ IO, Resource }
+import fs2.Stream
+import ru.nh.user.UserService.PostFeed
 
 import java.util.UUID
 
@@ -24,5 +25,9 @@ trait UserService {
 
   def deletePost(postId: UUID): IO[Unit]
 
-  def postFeed(userId: UUID, offset: Int, limit: Int): IO[Chain[Post]]
+  def postFeed(userId: UUID, offset: Int, limit: Int): Resource[IO, PostFeed]
+}
+
+object UserService {
+  final case class PostFeed(stream: Stream[IO, Post])
 }

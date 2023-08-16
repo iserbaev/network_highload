@@ -6,6 +6,7 @@ import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.util.invariant.{ InvalidEnum, InvalidOrdinal, InvalidValue, UnexpectedEnd }
+import org.postgresql.util.PSQLException
 import org.typelevel.log4cats.Logger
 import retry.RetryDetails.{ GivingUp, WillDelayAndRetry }
 import retry.RetryPolicies.{ fullJitter, limitRetries }
@@ -30,10 +31,16 @@ object RetrySupport {
       true.pure[F]
   }
 
+  private[transactors] def closedStatementFailureCondition[F[_]: Applicative]
+      : PartialFunction[Throwable, F[Boolean]] = { case ex: PSQLException =>
+    Option(ex.getMessage).contains("This statement has been closed").pure[F]
+  }
+
   def defaultTransactionRetryCondition[F[_]: Applicative]: PartialFunction[Throwable, F[Boolean]] =
     transactionRetrySqlStateCondition[F]
       .orElse(transactionConnectionFailureCondition[F])
       .orElse(notFoundFailureCondition[F])
+      .orElse(closedStatementFailureCondition[F])
 
   def retryConnection[F[_], A](fa: ConnectionIO[A])(xa: Transactor[F], retryCount: Int, baseInterval: FiniteDuration)(
       retryWhen: PartialFunction[Throwable, F[Boolean]]

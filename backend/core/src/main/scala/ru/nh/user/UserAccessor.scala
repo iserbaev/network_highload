@@ -1,11 +1,11 @@
 package ru.nh.user
 
-import cats.data.{Chain, OptionT}
-import cats.{Functor, NonEmptyTraverse, Reducible, ~>}
+import cats.data.{ Chain, OptionT }
+import cats.{ Functor, NonEmptyTraverse, Reducible, ~> }
 import fs2.Stream
-import ru.nh.user.UserAccessor.{PostRow, UserAccessorMapK, UserRow}
+import ru.nh.user.UserAccessor.{ PostRow, UserAccessorMapK, UserRow }
 
-import java.time.{Instant, LocalDate}
+import java.time.{ Instant, LocalDate }
 import java.util.UUID
 
 trait UserAccessor[F[_]] {

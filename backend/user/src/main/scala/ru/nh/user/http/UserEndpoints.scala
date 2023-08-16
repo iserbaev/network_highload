@@ -158,13 +158,14 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
     .serverLogic { auth => id =>
       userService
         .postFeed(UUID.fromString(auth.userId), id._1, id._2)
+        .use(_.stream.compile.toList)
         .attempt
         .map {
           _.leftMap {
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
-          }.flatMap {
-            _.toList.asRight
+          }.flatMap { feed =>
+            feed.asRight
           }
         }
     }
