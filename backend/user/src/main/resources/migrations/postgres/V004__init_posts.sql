@@ -12,6 +12,3 @@ CREATE TABLE IF NOT EXISTS posts
     PRIMARY KEY (user_id, post_id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS posts__id__idx ON posts USING btree (post_id) INCLUDE (user_id, post_id, created_at, text);
-CREATE INDEX IF NOT EXISTS posts__user_id_created_at__covering_idx ON posts USING btree (user_id, created_at) INCLUDE (user_id, post_id, created_at, text);
-

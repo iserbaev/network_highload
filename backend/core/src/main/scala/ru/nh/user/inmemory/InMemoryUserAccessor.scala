@@ -1,12 +1,13 @@
 package ru.nh.user.inmemory
 
-import cats.data.Chain
+import cats.data.{ Chain, OptionT }
 import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Ref }
 import cats.syntax.all._
-import cats.{ Functor, Reducible }
+import cats.{ Functor, NonEmptyTraverse, Reducible }
 import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
+import fs2.Stream
 
 import java.util.UUID
 import scala.collection.SortedSet
@@ -75,13 +76,28 @@ class InMemoryUserAccessor(
   def postFeed(userId: UUID, offset: Int, limit: Int): IO[Chain[PostRow]] =
     (friends.get, userPostIds.get, posts.get).mapN { (friendsSnapshot, userPostsSnapshot, postsSnapshot) =>
       val friendsIds = friendsSnapshot.getOrElse(userId, Set.empty)
-      val posts = friendsIds.foldLeft(SortedSet.empty[PostRow]) { case (acc, friendId) =>
+      val postFeed = friendsIds.foldLeft(SortedSet.empty[PostRow]) { case (acc, friendId) =>
         val friendPosts: Set[PostRow] =
           userPostsSnapshot.getOrElse(friendId, Set.empty[UUID]).flatMap(postsSnapshot.get)
 
         acc ++ friendPosts
       }
 
-      Chain.fromIterableOnce(posts.slice(offset, offset + limit))
+      Chain.fromIterableOnce(postFeed.slice(offset, offset + limit))
+    }
+
+  def userPosts(userId: UUID, fromIndex: Long): IO[Chain[PostRow]] =
+    (userPostIds.get, posts.get).mapN { (userPostsSnapshot, postsSnapshot) =>
+      val userPosts = userPostsSnapshot.getOrElse(userId, Set.empty[UUID]).flatMap(postsSnapshot.get)
+
+      Chain.fromIterableOnce(userPosts.filter(_.index >= fromIndex)).sortBy(_.index)
+    }
+
+  def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[IO, PostRow] =
+    Stream.evalSeq(IO(userIds.toList)).flatMap(id => Stream.evalSeq(userPosts(id, lastIndex)))
+
+  def getLastPost(userId: UUID): OptionT[IO, PostRow] =
+    OptionT {
+      posts.get.map(_.get(userId))
     }
 }

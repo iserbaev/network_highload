@@ -4,10 +4,14 @@ import cats.data.Chain
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import ru.nh.cache.EventManager
+import ru.nh.cache.EventManager.UserPosts
 
 import java.util.UUID
+import scala.concurrent.duration.DurationInt
 
-class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) extends UserService {
+class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts)(implicit log: Logger[IO])
+    extends UserService {
   def register(userInfo: RegisterUserCommand): IO[User] =
     accessor.save(userInfo).map(_.toUser(userInfo.hobbies)) <* log.debug(show"save ${userInfo.name}")
 
@@ -38,15 +42,18 @@ class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) exte
     accessor.deletePost(postId)
 
   def postFeed(userId: UUID, offset: Int, limit: Int): IO[Chain[Post]] =
-    accessor.postFeed(userId, offset, limit).map(_.map(_.toPost))
+    userPosts.subscribe()
 }
 
 object UserManager {
-  def apply(accessor: UserAccessor[IO])(implicit L: LoggerFactory[IO]): Resource[IO, UserService] = Resource.eval {
-    L.fromClass(classOf[UserManager])
-      .flatTap(_.info(s"Allocating UserManager with ${accessor} store."))
-      .map { implicit log =>
-        new UserManager(accessor)
+  def apply(accessor: UserAccessor[IO])(implicit L: LoggerFactory[IO]): Resource[IO, UserService] =
+    Resource
+      .eval {
+        L.fromClass(classOf[UserManager])
+          .flatTap(_.info(s"Allocating UserManager with ${accessor} store."))
       }
-  }
+      .flatMap { implicit log =>
+        EventManager.userPosts(accessor, 1.second).map(new UserManager(accessor, _))
+      }
+
 }

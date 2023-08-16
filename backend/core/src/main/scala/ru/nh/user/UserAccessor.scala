@@ -1,10 +1,11 @@
 package ru.nh.user
 
-import cats.data.Chain
-import cats.{ Functor, Reducible, ~> }
-import ru.nh.user.UserAccessor.{ PostRow, UserAccessorMapK, UserRow }
+import cats.data.{Chain, OptionT}
+import cats.{Functor, NonEmptyTraverse, Reducible, ~>}
+import fs2.Stream
+import ru.nh.user.UserAccessor.{PostRow, UserAccessorMapK, UserRow}
 
-import java.time.{ Instant, LocalDate }
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 trait UserAccessor[F[_]] {
@@ -29,6 +30,15 @@ trait UserAccessor[F[_]] {
   def deletePost(postId: UUID): F[Unit]
 
   def postFeed(userId: UUID, offset: Int, limit: Int): F[Chain[PostRow]]
+
+  def userPosts(userId: UUID, fromIndex: Long): F[Chain[PostRow]]
+
+  def getPostsLog[R[_]: NonEmptyTraverse](
+      userIds: R[UUID],
+      lastIndex: Long
+  ): Stream[F, PostRow]
+
+  def getLastPost(userId: UUID): OptionT[F, PostRow]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
     new UserAccessorMapK(this, read, write)
@@ -105,5 +115,14 @@ object UserAccessor {
 
     def postFeed(userId: UUID, offset: Int, limit: Int): G[Chain[PostRow]] =
       read(underlying.postFeed(userId, offset, limit))
+
+    def userPosts(userId: UUID, fromIndex: Long): G[Chain[PostRow]] =
+      read(underlying.userPosts(userId, fromIndex))
+
+    def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[G, PostRow] =
+      underlying.getPostsLog(userIds, lastIndex).translate(read)
+
+    def getLastPost(userId: UUID): OptionT[G, PostRow] =
+      underlying.getLastPost(userId).mapK(read)
   }
 }

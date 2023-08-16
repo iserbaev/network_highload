@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX IF NOT EXISTS posts__id__idx ON posts USING btree (post_id) INCLUDE (user_id, post_id, index, created_at, text);
+CREATE UNIQUE INDEX IF NOT EXISTS posts__user_id_index__covering_idx ON posts USING btree (user_id, index) INCLUDE (user_id, post_id, index, created_at, text);
