@@ -1,7 +1,6 @@
 package ru.nh.user.db
 
 import cats.data.{ NonEmptyChain, NonEmptyList }
-import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import cats.{ Functor, Reducible }
@@ -28,12 +27,12 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
          |WHERE user_id = $userId
          """.stripMargin
 
-  private def insertUser(id: UUID, u: RegisterUserCommand): Fragment =
+  private def insertUser(u: RegisterUserCommand): Fragment =
     sql"""INSERT INTO users(
-         |             user_id, name, surname, age, city, password, gender, biography, birthdate
+         |             name, surname, age, city, password, gender, biography, birthdate
          |           )
          |   VALUES  (
-         |             $id, ${u.name}, ${u.surname}, ${u.age},
+         |             ${u.name}, ${u.surname}, ${u.age},
          |             ${u.city}, ${u.password}, ${u.gender},
          |             ${u.biography}, ${u.birthdate}
          |           )
@@ -51,24 +50,24 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
       Fragments.values[R, (UUID, String)](h)
 
   def save(u: RegisterUserCommand): ConnectionIO[UserRow] =
-    UUIDGen[ConnectionIO].randomUUID.flatMap { id =>
-      insertUser(id, u).update
-        .withGeneratedKeys[UserRow](
-          "user_id",
-          "created_at",
-          "name",
-          "surname",
-          "age",
-          "city",
-          "password",
-          "gender",
-          "biography",
-          "birthdate"
-        )
-        .compile
-        .lastOrError <*
-        NonEmptyChain.fromSeq(u.hobbies.map(h => (id, h))).traverse_(insertHobbies(_).update.run)
-    }
+    insertUser(u).update
+      .withGeneratedKeys[UserRow](
+        "user_id",
+        "created_at",
+        "name",
+        "surname",
+        "age",
+        "city",
+        "password",
+        "gender",
+        "biography",
+        "birthdate"
+      )
+      .compile
+      .lastOrError
+      .flatTap { recordedUser =>
+        NonEmptyChain.fromSeq(u.hobbies.map(h => (recordedUser.userId, h))).traverse_(insertHobbies(_).update.run)
+      }
 
   private case class InsertUserRowRequest(
       userId: UUID,

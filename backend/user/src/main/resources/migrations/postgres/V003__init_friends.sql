@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS friends
 (
-    user_id UUID
-        CONSTRAINT fk_user_id_friends_ref_users
-            REFERENCES users,
+    user_id   UUID
+        CONSTRAINT friends_user_id_fkey
+            REFERENCES users (user_id) NOT NULL,
     friend_id UUID
-        CONSTRAINT fk_friend_id_friends_ref_users
-            REFERENCES users,
+        CONSTRAINT friends_friend_id_fkey
+            REFERENCES users (user_id) NOT NULL,
     PRIMARY KEY (user_id, friend_id)
 );
