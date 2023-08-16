@@ -16,7 +16,8 @@ class InMemoryUserAccessor(
     hobbies: Ref[IO, Map[UUID, List[String]]],
     friends: Ref[IO, Map[UUID, Set[UUID]]],
     posts: Ref[IO, Map[UUID, PostRow]],
-    userPostIds: Ref[IO, Map[UUID, Set[UUID]]]
+    userPostIds: Ref[IO, Map[UUID, Set[UUID]]],
+    counter: Ref[IO, Long]
 ) extends UserAccessor[IO] {
   def save(u: RegisterUserCommand): IO[UserRow] =
     (IO.realTimeInstant, IO.randomUUID).flatMapN { (now, id) =>
@@ -48,8 +49,8 @@ class InMemoryUserAccessor(
     friends.update(_.updatedWith(userId)(_.map(_ - friendId))).void
 
   def addPost(userId: UUID, text: String): IO[UUID] =
-    (IO.realTimeInstant, UUIDGen.randomUUID[IO]).flatMapN { (now, postId) =>
-      val postRow = PostRow(userId, postId, now, text)
+    (IO.realTimeInstant, UUIDGen.randomUUID[IO], counter.updateAndGet(_ + 1)).flatMapN { (now, postId, nextIndex) =>
+      val postRow = PostRow(userId, postId, nextIndex, now, text)
 
       userPostIds
         .update(_.updatedWith(userId) {

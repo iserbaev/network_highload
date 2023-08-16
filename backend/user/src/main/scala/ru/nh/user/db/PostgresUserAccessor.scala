@@ -139,7 +139,7 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
          """.stripMargin.update.withGeneratedKeys[UUID]("post_id").compile.lastOrError
 
   def getPost(postId: UUID): ConnectionIO[Option[PostRow]] =
-    sql"""SELECT user_id, post_id, created_at, text
+    sql"""SELECT user_id, post_id, index, created_at, text
          |FROM posts
          |WHERE post_id = $postId
          """.stripMargin
@@ -167,7 +167,7 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
          |    ) AS friend_ids,
          |LATERAL
          |    (
-         |        SELECT user_id, post_id, created_at, text
+         |        SELECT user_id, post_id, index, created_at, text
          |        FROM posts p
          |        WHERE p.user_id = friend_ids.friend_id
          |        ORDER BY created_at

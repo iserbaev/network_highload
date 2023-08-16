@@ -54,6 +54,7 @@ object UserAccessor {
   final case class PostRow(
       userId: UUID,
       postId: UUID,
+      index: Long,
       createdAt: Instant,
       text: String
   ) {
