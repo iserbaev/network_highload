@@ -1,9 +1,10 @@
 package ru.nh.user.inmemory
 
+import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Ref }
 import cats.syntax.all._
 import cats.{ Functor, Reducible }
-import ru.nh.user.UserAccessor.UserRow
+import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
 import java.util.UUID
@@ -11,7 +12,9 @@ import java.util.UUID
 class InMemoryUserAccessor(
     users: Ref[IO, Map[UUID, UserRow]],
     hobbies: Ref[IO, Map[UUID, List[String]]],
-    friends: Ref[IO, Map[UUID, Set[UUID]]]
+    friends: Ref[IO, Map[UUID, Set[UUID]]],
+    posts: Ref[IO, Map[UUID, PostRow]],
+    userPostIds: Ref[IO, Map[UUID, Set[UUID]]]
 ) extends UserAccessor[IO] {
   def save(u: RegisterUserCommand): IO[UserRow] =
     (IO.realTimeInstant, IO.randomUUID).flatMapN { (now, id) =>
@@ -41,4 +44,28 @@ class InMemoryUserAccessor(
 
   def deleteFriend(userId: UUID, friendId: UUID): IO[Unit] =
     friends.update(_.updatedWith(userId)(_.map(_ - friendId))).void
+
+  def addPost(userId: UUID, text: String): IO[UUID] =
+    (IO.realTimeInstant, UUIDGen.randomUUID[IO]).flatMapN { (now, postId) =>
+      val postRow = PostRow(userId, postId, now, text)
+
+      userPostIds
+        .update(_.updatedWith(userId) {
+          case Some(postIds) => (postIds + postId).some
+          case None          => Set(postId).some
+        }) *>
+        posts
+          .update(_.updated(postId, postRow))
+          .as(postId)
+    }
+
+  def getPost(postId: UUID): IO[Option[PostRow]] =
+    posts.get.map(_.get(postId))
+
+  def updatePost(postId: UUID, text: String): IO[Unit] =
+    posts.update(_.updatedWith(postId)(_.map(_.copy(text = text))))
+
+  def deletePost(postId: UUID): IO[Unit] =
+    posts.get.flatMap(_.get(postId).traverse_(row => userPostIds.update(_.removed(row.postId)))) *>
+      posts.update(_.removed(postId))
 }

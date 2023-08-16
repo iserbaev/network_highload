@@ -8,7 +8,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import org.typelevel.log4cats.LoggerFactory
-import ru.nh.user.UserAccessor.UserRow
+import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
 import java.time.LocalDate
@@ -131,6 +131,34 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
 
     ensureUpdated(sql)
   }
+
+  def addPost(userId: UUID, text: String): ConnectionIO[UUID] =
+    sql"""INSERT INTO posts(user_id, text)
+         |VALUES ($userId, $text)
+         |RETURNING post_id
+         """.stripMargin.update.withGeneratedKeys[UUID]("post_id").compile.lastOrError
+
+  def getPost(postId: UUID): ConnectionIO[Option[PostRow]] =
+    sql"""SELECT user_id, post_id, created_at, text
+         |FROM posts
+         |WHERE post_id = $postId
+         """.stripMargin
+      .query[PostRow]
+      .option
+
+  def updatePost(postId: UUID, text: String): ConnectionIO[Unit] =
+    ensureUpdated {
+      sql"""UPDATE posts
+           |   SET text = $text
+           | WHERE post_id = $postId
+           |""".stripMargin.update.run
+    }
+
+  def deletePost(postId: UUID): ConnectionIO[Unit] =
+    ensureUpdated {
+      sql"""DELETE FROM posts
+           |WHERE post_id = $postId""".stripMargin.update.run
+    }
 
   private def ensureUpdated(result: ConnectionIO[Int]): ConnectionIO[Unit] =
     result.flatMap { updated =>

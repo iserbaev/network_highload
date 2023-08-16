@@ -1,9 +1,9 @@
 package ru.nh.user
 
-import cats.{ Functor, Reducible, ~> }
-import ru.nh.user.UserAccessor.{ UserAccessorMapK, UserRow }
+import cats.{Functor, Reducible, ~>}
+import ru.nh.user.UserAccessor.{PostRow, UserAccessorMapK, UserRow}
 
-import java.time.{ Instant, LocalDate }
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 trait UserAccessor[F[_]] {
@@ -21,6 +21,11 @@ trait UserAccessor[F[_]] {
   def addFriend(userId: UUID, friendId: UUID): F[Unit]
 
   def deleteFriend(userId: UUID, friendId: UUID): F[Unit]
+
+  def addPost(userId: UUID, text: String): F[UUID]
+  def getPost(postId: UUID): F[Option[PostRow]]
+  def updatePost(postId: UUID, text: String): F[Unit]
+  def deletePost(postId: UUID): F[Unit]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
     new UserAccessorMapK(this, read, write)
@@ -42,6 +47,13 @@ object UserAccessor {
     def toUser(hobbies: List[String]): User =
       User(userId, name, surname, age, city, gender, birthdate, biography, hobbies)
   }
+
+  final case class PostRow(
+      userId: UUID,
+      postId: UUID,
+      createdAt: Instant,
+      text: String
+  )
 
   private[user] final class UserAccessorMapK[F[_], G[_]](underlying: UserAccessor[F], read: F ~> G, write: F ~> G)
       extends UserAccessor[G] {
@@ -68,5 +80,17 @@ object UserAccessor {
 
     def deleteFriend(userId: UUID, friendId: UUID): G[Unit] =
       write(underlying.deleteFriend(userId, friendId))
+
+    def addPost(userId: UUID, text: String): G[UUID] =
+      write(underlying.addPost(userId, text))
+
+    def getPost(postId: UUID): G[Option[PostRow]] =
+      read(underlying.getPost(postId))
+
+    def updatePost(postId: UUID, text: String): G[Unit] =
+      write(underlying.updatePost(postId, text))
+
+    def deletePost(postId: UUID): G[Unit] =
+      write(underlying.deletePost(postId))
   }
 }

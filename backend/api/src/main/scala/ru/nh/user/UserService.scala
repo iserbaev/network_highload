@@ -14,4 +14,12 @@ trait UserService {
   def addFriend(userId: UUID, friendId: UUID): IO[Unit]
 
   def deleteFriend(userId: UUID, friendId: UUID): IO[Unit]
+
+  def addPost(userId: UUID, text: String): IO[UUID]
+
+  def getPost(postId: UUID): IO[Option[(UUID, String)]]
+
+  def updatePost(postId: UUID, text: String): IO[Unit]
+
+  def deletePost(postId: UUID): IO[Unit]
 }

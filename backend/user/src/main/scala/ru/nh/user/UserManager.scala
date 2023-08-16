@@ -23,6 +23,18 @@ class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) exte
 
   def deleteFriend(userId: UUID, friendId: UUID): IO[Unit] =
     accessor.deleteFriend(userId, friendId)
+
+  def addPost(userId: UUID, text: String): IO[UUID] =
+    accessor.addPost(userId, text)
+
+  def getPost(postId: UUID): IO[Option[(UUID, String)]] =
+    accessor.getPost(postId).map(_.map(r => (r.userId, r.text)))
+
+  def updatePost(postId: UUID, text: String): IO[Unit] =
+    accessor.updatePost(postId, text)
+
+  def deletePost(postId: UUID): IO[Unit] =
+    accessor.deletePost(postId)
 }
 
 object UserManager {

@@ -6,7 +6,8 @@ import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.{ UserId, UserService }
+import ru.nh.user.http.UserEndpointDescriptions.Post
+import ru.nh.user.{ Id, UserService }
 import sttp.model.StatusCode
 
 import java.util.UUID
@@ -23,7 +24,7 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
         .register(cmd)
         .attempt
         .map {
-          _.map(u => UserId(u.id))
+          _.map(u => Id(u.id))
             .leftMap {
               case _: IllegalArgumentException => (StatusCode.BadRequest, none)
               case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, "", 0).some)
@@ -93,5 +94,76 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
         }
     }
 
-  val all = NonEmptyList.of(registerUser, getUserProfile, searchUserProfile, addFriend, deleteFriend)
+  val addPost: SEndpoint = userEndpointDescriptions.addPost
+    .serverLogic { auth => postCreate =>
+      userService
+        .addPost(UUID.fromString(auth.userId), postCreate.text)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap { id =>
+            Id(id).asRight
+          }
+        }
+    }
+
+  val updatePost: SEndpoint = userEndpointDescriptions.updatePost
+    .serverLogic { auth => postUpdate =>
+      userService
+        .updatePost(postUpdate.id, postUpdate.text)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap { _ =>
+            StatusCode.Ok.asRight
+          }
+        }
+    }
+
+  val deletePost: SEndpoint = userEndpointDescriptions.deletePost
+    .serverLogic { auth => id =>
+      userService
+        .deletePost(id)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap { _ =>
+            StatusCode.Ok.asRight
+          }
+        }
+    }
+
+  val getPost: SEndpoint = userEndpointDescriptions.getPost
+    .serverLogic { auth => id =>
+      userService
+        .getPost(id)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap {
+            case Some((userId, text)) => Post(id, text, userId).asRight
+            case None                 => (StatusCode.NotFound, none).asLeft
+          }
+        }
+    }
+
+  val all = NonEmptyList.of(
+    registerUser,
+    getUserProfile,
+    searchUserProfile,
+    addFriend,
+    deleteFriend,
+    addPost,
+    updatePost,
+    deletePost,
+    getPost
+  )
 }

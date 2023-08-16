@@ -2,10 +2,13 @@ package ru.nh.user.http
 
 import cats.effect.IO
 import cats.syntax.all._
+import io.circe.{ Decoder, Encoder }
+import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.{ RegisterUserCommand, User, UserId }
+import ru.nh.user.http.UserEndpointDescriptions.{ Post, PostCreate, PostUpdate }
+import ru.nh.user.{ Id, RegisterUserCommand, User }
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
@@ -50,12 +53,12 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
         }
     )
 
-  val registerUser: BaseEndpoint[RegisterUserCommand, UserId] =
+  val registerUser: BaseEndpoint[RegisterUserCommand, Id] =
     baseEndpoint.post
       .in("register")
       .description("Register user")
       .in(jsonBody[RegisterUserCommand])
-      .out(jsonBody[UserId])
+      .out(jsonBody[Id])
 
   val getUserProfile: SecuredEndpoint[UUID, User] =
     securedEndpoint.get
@@ -83,4 +86,50 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in("friend" / "delete")
       .in(path[UUID]("user_id"))
       .out(statusCode.description(StatusCode.Ok, "Пользователь успешно удалил из друзей пользователя"))
+
+  val addPost: SecuredEndpoint[PostCreate, Id] =
+    securedEndpoint.post
+      .in("post" / "create")
+      .in(jsonBody[PostCreate])
+      .out(jsonBody[Id])
+
+  val updatePost: SecuredEndpoint[PostUpdate, StatusCode] =
+    securedEndpoint.put
+      .in("post" / "update")
+      .in(jsonBody[PostUpdate])
+      .out(statusCode.description(StatusCode.Ok, "Успешно изменен пост"))
+
+  val deletePost: SecuredEndpoint[UUID, StatusCode] =
+    securedEndpoint.put
+      .in("post" / "delete")
+      .in(path[UUID]("id"))
+      .out(statusCode.description(StatusCode.Ok, "Успешно удален пост"))
+
+  val getPost: SecuredEndpoint[UUID, Post] =
+    securedEndpoint.get
+      .in("post" / "get")
+      .in(path[UUID]("id"))
+      .out(jsonBody[Post])
+
+}
+
+object UserEndpointDescriptions {
+  final case class PostCreate(text: String)
+  object PostCreate {
+    implicit val decoder: Decoder[PostCreate]          = deriveDecoder[PostCreate]
+    implicit val encoder: Encoder.AsObject[PostCreate] = deriveEncoder[PostCreate]
+  }
+
+  final case class PostUpdate(id: UUID, text: String)
+  object PostUpdate {
+    implicit val decoder: Decoder[PostUpdate]          = deriveDecoder[PostUpdate]
+    implicit val encoder: Encoder.AsObject[PostUpdate] = deriveEncoder[PostUpdate]
+  }
+
+  final case class Post(id: UUID, text: String, author_user_id: UUID)
+
+  object Post {
+    implicit val decoder: Decoder[Post]          = deriveDecoder[Post]
+    implicit val encoder: Encoder.AsObject[Post] = deriveEncoder[Post]
+  }
 }

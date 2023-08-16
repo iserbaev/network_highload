@@ -27,4 +27,4 @@ final case class RegisterUserCommand(
     hobbies: List[String]
 )
 
-final case class UserId(id: UUID)
+final case class Id(id: UUID)
