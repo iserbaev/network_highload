@@ -1,5 +1,6 @@
 package ru.nh.user.inmemory
 
+import cats.data.Chain
 import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Ref }
 import cats.syntax.all._
@@ -8,6 +9,7 @@ import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
 import java.util.UUID
+import scala.collection.SortedSet
 
 class InMemoryUserAccessor(
     users: Ref[IO, Map[UUID, UserRow]],
@@ -68,4 +70,17 @@ class InMemoryUserAccessor(
   def deletePost(postId: UUID): IO[Unit] =
     posts.get.flatMap(_.get(postId).traverse_(row => userPostIds.update(_.removed(row.postId)))) *>
       posts.update(_.removed(postId))
+
+  def postFeed(userId: UUID, offset: Int, limit: Int): IO[Chain[PostRow]] =
+    (friends.get, userPostIds.get, posts.get).mapN { (friendsSnapshot, userPostsSnapshot, postsSnapshot) =>
+      val friendsIds = friendsSnapshot.getOrElse(userId, Set.empty)
+      val posts = friendsIds.foldLeft(SortedSet.empty[PostRow]) { case (acc, friendId) =>
+        val friendPosts: Set[PostRow] =
+          userPostsSnapshot.getOrElse(friendId, Set.empty[UUID]).flatMap(postsSnapshot.get)
+
+        acc ++ friendPosts
+      }
+
+      Chain.fromIterableOnce(posts.slice(offset, offset + limit))
+    }
 }

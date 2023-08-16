@@ -2,13 +2,13 @@ package ru.nh.user.http
 
 import cats.effect.IO
 import cats.syntax.all._
-import io.circe.{ Decoder, Encoder }
 import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
+import io.circe.{ Decoder, Encoder }
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.http.UserEndpointDescriptions.{ Post, PostCreate, PostUpdate }
-import ru.nh.user.{ Id, RegisterUserCommand, User }
+import ru.nh.user.http.UserEndpointDescriptions.{ PostCreate, PostUpdate }
+import ru.nh.user.{ Id, Post, RegisterUserCommand, User }
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
@@ -111,6 +111,12 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in(path[UUID]("id"))
       .out(jsonBody[Post])
 
+  val postFeed: SecuredEndpoint[(Int, Int), List[Post]] =
+    securedEndpoint.get
+      .in("post" / "feed")
+      .in(path[Int]("offset").and(path[Int]("limit")))
+      .out(jsonBody[List[Post]])
+
 }
 
 object UserEndpointDescriptions {
@@ -124,12 +130,5 @@ object UserEndpointDescriptions {
   object PostUpdate {
     implicit val decoder: Decoder[PostUpdate]          = deriveDecoder[PostUpdate]
     implicit val encoder: Encoder.AsObject[PostUpdate] = deriveEncoder[PostUpdate]
-  }
-
-  final case class Post(id: UUID, text: String, author_user_id: UUID)
-
-  object Post {
-    implicit val decoder: Decoder[Post]          = deriveDecoder[Post]
-    implicit val encoder: Encoder.AsObject[Post] = deriveEncoder[Post]
   }
 }

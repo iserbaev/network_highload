@@ -6,7 +6,6 @@ import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.http.UserEndpointDescriptions.Post
 import ru.nh.user.{ Id, UserService }
 import sttp.model.StatusCode
 
@@ -149,8 +148,23 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
           }.flatMap {
-            case Some((userId, text)) => Post(id, text, userId).asRight
-            case None                 => (StatusCode.NotFound, none).asLeft
+            case Some(post) => post.asRight
+            case None       => (StatusCode.NotFound, none).asLeft
+          }
+        }
+    }
+
+  val postFeed: SEndpoint = userEndpointDescriptions.postFeed
+    .serverLogic { auth => id =>
+      userService
+        .postFeed(UUID.fromString(auth.userId), id._1, id._2)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap {
+            _.toList.asRight
           }
         }
     }
@@ -164,6 +178,7 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
     addPost,
     updatePost,
     deletePost,
-    getPost
+    getPost,
+    postFeed
   )
 }

@@ -3,7 +3,7 @@ package ru.nh.http
 import io.circe._
 import io.circe.generic.semiauto._
 import ru.nh.auth.AuthService.{ Token, UserPassword }
-import ru.nh.user.{ RegisterUserCommand, User, Id }
+import ru.nh.user.{ Id, Post, RegisterUserCommand, User }
 
 object json {
   object all extends UserJsonImplicits with CommonImplicits
@@ -32,4 +32,7 @@ trait UserJsonImplicits {
 
   implicit val userDecoder: Decoder[User]          = deriveDecoder[User]
   implicit val userEncoder: Encoder.AsObject[User] = deriveEncoder[User]
+
+  implicit val decoder: Decoder[Post]          = deriveDecoder[Post]
+  implicit val encoder: Encoder.AsObject[Post] = deriveEncoder[Post]
 }

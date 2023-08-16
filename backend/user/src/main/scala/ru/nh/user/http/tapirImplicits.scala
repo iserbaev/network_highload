@@ -2,8 +2,8 @@ package ru.nh.user.http
 
 import ru.nh.auth.AuthService.{ Token, UserPassword }
 import ru.nh.http.ErrorResponse
-import ru.nh.user.http.UserEndpointDescriptions.{ Post, PostCreate, PostUpdate }
-import ru.nh.user.{ Id, RegisterUserCommand, User }
+import ru.nh.user.http.UserEndpointDescriptions.{ PostCreate, PostUpdate }
+import ru.nh.user.{ Id, Post, RegisterUserCommand, User }
 import sttp.tapir.Schema
 
 object tapirImplicits {

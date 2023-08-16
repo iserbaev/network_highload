@@ -1,5 +1,6 @@
 package ru.nh.user
 
+import cats.data.Chain
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
@@ -27,14 +28,17 @@ class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) exte
   def addPost(userId: UUID, text: String): IO[UUID] =
     accessor.addPost(userId, text)
 
-  def getPost(postId: UUID): IO[Option[(UUID, String)]] =
-    accessor.getPost(postId).map(_.map(r => (r.userId, r.text)))
+  def getPost(postId: UUID): IO[Option[Post]] =
+    accessor.getPost(postId).map(_.map(_.toPost))
 
   def updatePost(postId: UUID, text: String): IO[Unit] =
     accessor.updatePost(postId, text)
 
   def deletePost(postId: UUID): IO[Unit] =
     accessor.deletePost(postId)
+
+  def postFeed(userId: UUID, offset: Int, limit: Int): IO[Chain[Post]] =
+    accessor.postFeed(userId, offset, limit).map(_.map(_.toPost))
 }
 
 object UserManager {

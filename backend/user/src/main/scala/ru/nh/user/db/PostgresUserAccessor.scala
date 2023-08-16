@@ -1,6 +1,6 @@
 package ru.nh.user.db
 
-import cats.data.{ NonEmptyChain, NonEmptyList }
+import cats.data.{ Chain, NonEmptyChain, NonEmptyList }
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import cats.{ Functor, Reducible }
@@ -159,6 +159,26 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
       sql"""DELETE FROM posts
            |WHERE post_id = $postId""".stripMargin.update.run
     }
+
+  def postFeed(userId: UUID, offset: Int, limit: Int): ConnectionIO[Chain[PostRow]] =
+    sql"""SELECT friend_posts.* FROM
+         |    (
+         |        SELECT friend_id FROM friends WHERE user_id = $userId
+         |    ) AS friend_ids,
+         |LATERAL
+         |    (
+         |        SELECT user_id, post_id, created_at, text
+         |        FROM posts p
+         |        WHERE p.user_id = friend_ids.friend_id
+         |        ORDER BY created_at
+         |        LIMIT ${offset + limit}
+         |    ) AS friend_posts
+         |OFFSET $offset
+         |LIMIT $limit
+         """.stripMargin
+      .query[PostRow]
+      .to[List]
+      .map(Chain.fromSeq)
 
   private def ensureUpdated(result: ConnectionIO[Int]): ConnectionIO[Unit] =
     result.flatMap { updated =>

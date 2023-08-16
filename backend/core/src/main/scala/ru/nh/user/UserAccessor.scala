@@ -1,9 +1,10 @@
 package ru.nh.user
 
-import cats.{Functor, Reducible, ~>}
-import ru.nh.user.UserAccessor.{PostRow, UserAccessorMapK, UserRow}
+import cats.data.Chain
+import cats.{ Functor, Reducible, ~> }
+import ru.nh.user.UserAccessor.{ PostRow, UserAccessorMapK, UserRow }
 
-import java.time.{Instant, LocalDate}
+import java.time.{ Instant, LocalDate }
 import java.util.UUID
 
 trait UserAccessor[F[_]] {
@@ -26,6 +27,8 @@ trait UserAccessor[F[_]] {
   def getPost(postId: UUID): F[Option[PostRow]]
   def updatePost(postId: UUID, text: String): F[Unit]
   def deletePost(postId: UUID): F[Unit]
+
+  def postFeed(userId: UUID, offset: Int, limit: Int): F[Chain[PostRow]]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
     new UserAccessorMapK(this, read, write)
@@ -53,7 +56,13 @@ object UserAccessor {
       postId: UUID,
       createdAt: Instant,
       text: String
-  )
+  ) {
+    def toPost: Post =
+      Post(postId, text, userId, createdAt)
+  }
+  object PostRow {
+    implicit val ordering: Ordering[PostRow] = Ordering.by[PostRow, Instant](_.createdAt)
+  }
 
   private[user] final class UserAccessorMapK[F[_], G[_]](underlying: UserAccessor[F], read: F ~> G, write: F ~> G)
       extends UserAccessor[G] {
@@ -92,5 +101,8 @@ object UserAccessor {
 
     def deletePost(postId: UUID): G[Unit] =
       write(underlying.deletePost(postId))
+
+    def postFeed(userId: UUID, offset: Int, limit: Int): G[Chain[PostRow]] =
+      read(underlying.postFeed(userId, offset, limit))
   }
 }
