@@ -17,6 +17,12 @@ class UserManager(val accessor: UserAccessor[IO])(implicit log: Logger[IO]) exte
     accessor
       .search(firstNamePrefix, lastNamePrefix)
       .flatMap(_.traverse(row => accessor.getHobbies(row.userId).map(row.toUser)))
+
+  def addFriend(userId: UUID, friendId: UUID): IO[Unit] =
+    accessor.addFriend(userId, friendId)
+
+  def deleteFriend(userId: UUID, friendId: UUID): IO[Unit] =
+    accessor.deleteFriend(userId, friendId)
 }
 
 object UserManager {

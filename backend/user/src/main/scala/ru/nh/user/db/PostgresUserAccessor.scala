@@ -115,6 +115,30 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
     searchUserStatement(firstNamePrefix, lastNamePrefix)
       .query[UserRow]
       .option
+
+  def addFriend(userId: UUID, friendId: UUID): doobie.ConnectionIO[Unit] = {
+    val sql = sql"""INSERT INTO friends(user_id, friend_id)
+                   |VALUES ($userId, $friendId)
+         """.stripMargin.update.run
+
+    ensureUpdated(sql)
+  }
+
+  def deleteFriend(userId: UUID, friendId: UUID): doobie.ConnectionIO[Unit] = {
+    val sql =
+      sql"""DELETE from friends
+           |WHERE user_id = $userId AND friend_id = $friendId
+         """.stripMargin.update.run
+
+    ensureUpdated(sql)
+  }
+
+  private def ensureUpdated(result: ConnectionIO[Int]): ConnectionIO[Unit] =
+    result.flatMap { updated =>
+      if (updated != 1) {
+        FC.raiseError(new RuntimeException(s"expected 1 row updated but got $updated"))
+      } else FC.unit
+    }
 }
 
 object PostgresUserAccessor {

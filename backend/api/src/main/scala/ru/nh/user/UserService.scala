@@ -11,4 +11,7 @@ trait UserService {
 
   def search(firstNamePrefix: String, lastNamePrefix: String): IO[Option[User]]
 
+  def addFriend(userId: UUID, friendId: UUID): IO[Unit]
+
+  def deleteFriend(userId: UUID, friendId: UUID): IO[Unit]
 }

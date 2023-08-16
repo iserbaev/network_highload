@@ -68,4 +68,19 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in("search")
       .in(query[String]("first_name").and(query[String]("last_name")))
       .out(jsonBody[User])
+
+  val addFriend: SecuredEndpoint[UUID, StatusCode] =
+    securedEndpoint.put
+      .in("friend" / "set")
+      .in(path[UUID]("user_id"))
+      .out(
+        statusCode
+          .description(StatusCode.Ok, "Пользователь успешно указал своего друга")
+      )
+
+  val deleteFriend: SecuredEndpoint[UUID, StatusCode] =
+    securedEndpoint.put
+      .in("friend" / "delete")
+      .in(path[UUID]("user_id"))
+      .out(statusCode.description(StatusCode.Ok, "Пользователь успешно удалил из друзей пользователя"))
 }

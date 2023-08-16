@@ -18,6 +18,10 @@ trait UserAccessor[F[_]] {
 
   def search(firstNamePrefix: String, lastNamePrefix: String): F[Option[UserRow]]
 
+  def addFriend(userId: UUID, friendId: UUID): F[Unit]
+
+  def deleteFriend(userId: UUID, friendId: UUID): F[Unit]
+
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
     new UserAccessorMapK(this, read, write)
 }
@@ -58,5 +62,11 @@ object UserAccessor {
 
     def search(firstNamePrefix: String, lastNamePrefix: String): G[Option[UserRow]] =
       read(underlying.search(firstNamePrefix, lastNamePrefix))
+
+    def addFriend(userId: UUID, friendId: UUID): G[Unit] =
+      write(underlying.addFriend(userId, friendId))
+
+    def deleteFriend(userId: UUID, friendId: UUID): G[Unit] =
+      write(underlying.deleteFriend(userId, friendId))
   }
 }

@@ -9,6 +9,8 @@ import ru.nh.http.ErrorResponse
 import ru.nh.user.{ UserId, UserService }
 import sttp.model.StatusCode
 
+import java.util.UUID
+
 class UserEndpoints(authService: AuthService, userService: UserService)(implicit L: LoggerFactory[IO]) {
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[UserEndpoints])
@@ -61,5 +63,35 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
         }
     }
 
-  val all = NonEmptyList.of(registerUser, getUserProfile, searchUserProfile)
+  val addFriend: SEndpoint = userEndpointDescriptions.addFriend
+    .serverLogic { auth => id =>
+      userService
+        .addFriend(UUID.fromString(auth.userId), id)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap { _ =>
+            StatusCode.Ok.asRight
+          }
+        }
+    }
+
+  val deleteFriend: SEndpoint = userEndpointDescriptions.deleteFriend
+    .serverLogic { auth => id =>
+      userService
+        .deleteFriend(UUID.fromString(auth.userId), id)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap { _ =>
+            StatusCode.Ok.asRight
+          }
+        }
+    }
+
+  val all = NonEmptyList.of(registerUser, getUserProfile, searchUserProfile, addFriend, deleteFriend)
 }

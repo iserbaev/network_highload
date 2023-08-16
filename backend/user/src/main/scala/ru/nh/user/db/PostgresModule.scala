@@ -34,7 +34,7 @@ object PostgresModule {
       read: TransactorSettings,
       write: TransactorSettings,
       migrations: Migrations,
-      hikariMetricsEnabled: Boolean
+      metricsEnabled: Boolean
   )
 
   final case class Migrations(locations: List[String], mixed: MixedTransactions)

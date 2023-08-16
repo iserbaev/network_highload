@@ -8,8 +8,11 @@ import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
 import java.util.UUID
 
-class InMemoryUserAccessor(users: Ref[IO, Map[UUID, UserRow]], hobbies: Ref[IO, Map[UUID, List[String]]])
-    extends UserAccessor[IO] {
+class InMemoryUserAccessor(
+    users: Ref[IO, Map[UUID, UserRow]],
+    hobbies: Ref[IO, Map[UUID, List[String]]],
+    friends: Ref[IO, Map[UUID, Set[UUID]]]
+) extends UserAccessor[IO] {
   def save(u: RegisterUserCommand): IO[UserRow] =
     (IO.realTimeInstant, IO.randomUUID).flatMapN { (now, id) =>
       val userRow = UserRow(id, now, u.name, u.surname, u.age, u.city, u.password, u.gender, u.biography, u.birthdate)
@@ -32,4 +35,10 @@ class InMemoryUserAccessor(users: Ref[IO, Map[UUID, UserRow]], hobbies: Ref[IO, 
     users.get.map(
       _.find { case (_, row) => row.name.contains(firstNamePrefix) && row.surname.contains(lastNamePrefix) }.map(_._2)
     )
+
+  def addFriend(userId: UUID, friendId: UUID): IO[Unit] =
+    friends.update(_.updatedWith(userId)(_.map(_ + friendId).orElse(Set(friendId).some))).void
+
+  def deleteFriend(userId: UUID, friendId: UUID): IO[Unit] =
+    friends.update(_.updatedWith(userId)(_.map(_ - friendId))).void
 }
