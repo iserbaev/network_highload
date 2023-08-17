@@ -2,18 +2,20 @@ package ru.nh.user.http
 
 import cats.effect.IO
 import cats.syntax.all._
-import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
-import io.circe.{ Decoder, Encoder }
-import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
+import org.typelevel.log4cats.{Logger, LoggerFactory}
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.http.UserEndpointDescriptions.{ PostCreate, PostUpdate }
-import ru.nh.user.{ Id, Post, RegisterUserCommand, User }
+import ru.nh.user.http.UserEndpointDescriptions.{PostCreate, PostUpdate}
+import ru.nh.user.{Id, Post, RegisterUserCommand, User}
+import sttp.capabilities.fs2.Fs2Streams
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerFactory[IO]) {
@@ -111,11 +113,13 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in(path[UUID]("id"))
       .out(jsonBody[Post])
 
-  val postFeed: SecuredEndpoint[(Int, Int), List[Post]] =
+  val postFeed =
     securedEndpoint.get
       .in("post" / "feed")
       .in(path[Int]("offset").and(path[Int]("limit")))
-      .out(jsonBody[List[Post]])
+//      .out(NoCacheControlHeader)
+//      .out(XAccelBufferingHeader)
+      .out(streamTextBody(Fs2Streams[IO])(CodecFormat.TextPlain(), Some(StandardCharsets.UTF_8)))
 
 }
 

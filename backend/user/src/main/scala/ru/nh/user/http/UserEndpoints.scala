@@ -10,7 +10,6 @@ import ru.nh.user.{ Id, UserService }
 import sttp.model.StatusCode
 
 import java.util.UUID
-
 class UserEndpoints(authService: AuthService, userService: UserService)(implicit L: LoggerFactory[IO]) {
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[UserEndpoints])
@@ -155,18 +154,16 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
     }
 
   val postFeed: SEndpoint = userEndpointDescriptions.postFeed
-    .serverLogic { auth => id =>
-      userService
-        .postFeed(UUID.fromString(auth.userId), id._1, id._2)
-        .use(_.stream.compile.toList)
-        .attempt
-        .map {
-          _.leftMap {
-            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
-            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
-          }.flatMap { feed =>
-            feed.asRight
-          }
+    .serverLogicSuccess { auth => offsetLimit =>
+      log
+        .debug(s"Start http post feed for [${auth.userId}]")
+        .as {
+          fs2.Stream
+            .resource(userService.postFeed(UUID.fromString(auth.userId), offsetLimit._1, offsetLimit._2))
+            .flatMap(_.stream)
+            .map(_.toString)
+            .through(fs2.text.utf8.encode)
+            .onFinalizeCase(ec => log.debug(s"Finalized http post feed [${auth.userId}], $ec"))
         }
     }
 

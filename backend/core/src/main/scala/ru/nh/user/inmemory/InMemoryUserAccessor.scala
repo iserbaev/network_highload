@@ -5,7 +5,6 @@ import cats.effect.std.UUIDGen
 import cats.effect.{ IO, Ref }
 import cats.syntax.all._
 import cats.{ Functor, NonEmptyTraverse, Reducible }
-import fs2.Stream
 import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
 
@@ -48,8 +47,8 @@ class InMemoryUserAccessor(
 
   def deleteFriend(userId: UUID, friendId: UUID): IO[Unit] =
     friends.update(_.updatedWith(userId)(_.map(_ - friendId))).void
-  def getFriends(userId: UUID): Stream[IO, UUID] =
-    Stream.evalSeq(friends.get.map(_.getOrElse(userId, Set.empty).toList))
+  def getFriends(userId: UUID): IO[List[UUID]] =
+    friends.get.map(_.getOrElse(userId, Set.empty).toList)
 
   def addPost(userId: UUID, text: String): IO[UUID] =
     (IO.realTimeInstant, UUIDGen.randomUUID[IO], counter.updateAndGet(_ + 1)).flatMapN { (now, postId, nextIndex) =>
@@ -95,8 +94,8 @@ class InMemoryUserAccessor(
       Chain.fromIterableOnce(userPosts.filter(_.index >= fromIndex)).sortBy(_.index)
     }
 
-  def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[IO, PostRow] =
-    Stream.evalSeq(IO(userIds.toList)).flatMap(id => Stream.evalSeq(userPosts(id, lastIndex).map(_.toList)))
+  def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long, limit: Int): IO[Vector[PostRow]] =
+    userIds.foldMapM(id => userPosts(id, lastIndex).map(_.toVector))
 
   def getLastPost(userId: UUID): OptionT[IO, PostRow] =
     OptionT {

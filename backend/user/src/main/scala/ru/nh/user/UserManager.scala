@@ -3,10 +3,11 @@ package ru.nh.user
 import cats.effect.std.Supervisor
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
-import fs2.Stream
+import fs2.concurrent.Channel
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.cache.EventManager
 import ru.nh.cache.EventManager.UserPosts
+import ru.nh.user.UserAccessor.PostRow
 import ru.nh.user.UserService.PostFeed
 
 import java.util.UUID
@@ -44,28 +45,34 @@ class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts, val 
   def deletePost(postId: UUID): IO[Unit] =
     accessor.deletePost(postId)
 
-  def postFeed(userId: UUID, offset: Int, limit: Int): Resource[IO, PostFeed] =
-    Resource
-      .eval(accessor.postFeed(userId, offset, limit).map(_.map(_.toPost)))
-      .map(p => PostFeed(Stream.iterable(p.toList)))
-//    Resource.suspend {
-//    Channel.unbounded[IO, PostRow].map { posts =>
-//      val logic = userPosts.subscribe(userId).through(posts.sendAll).compile.drain
-//
-//      // Thus, we manually start our logic fiber with supervision
-//      // and close both `updates` and `commands` channels on release.
-//      // After channels close we wait for our logic fiber to send
-//      // all registered updates and observe gRPC stream close from
-//      // a server side.
-//      Resource
-//        .makeCase(supervisor.supervise(logic)) { (logicFiber, ec) =>
-//          posts.close *>
-//          logicFiber.joinWithUnit *>
-//            log.debug(s"Finalized post feed [$userId]: $ec.")
-//        }
-//        .as(PostFeed(posts.stream.map(_.toPost).evalTap(p => log.debug(s"PostFeed for $userId: $p"))))
-//    }
-//  }
+  def postFeed(userId: UUID, offset: Int, limit: Int): Resource[IO, PostFeed] = Resource.suspend {
+    Channel.unbounded[IO, PostRow].map { posts =>
+      val logic =
+        fs2.Stream
+          .evalSeq(accessor.getFriends(userId))
+          .parEvalMapUnordered(1000) { friendId =>
+            userPosts
+              .subscribe(friendId)
+              .through(posts.sendAll)
+              .compile
+              .drain
+          }
+
+      // Thus, we manually start our logic fiber with supervision
+      // and close both `updates` and `commands` channels on release.
+      // After channels close we wait for our logic fiber to send
+      // all registered updates and observe gRPC stream close from
+      // a server side.
+      Resource
+        .makeCase(supervisor.supervise(logic.compile.drain)) {
+          (logicFiber, ec) =>
+            posts.close *>
+              logicFiber.cancel.attempt *>
+              log.debug(s"Finalized post feed [$userId]: $ec.")
+        }
+        .as(PostFeed(posts.stream.drop(offset.toLong).map(_.toPost)))
+    }
+  }
 }
 
 object UserManager {
@@ -76,7 +83,7 @@ object UserManager {
           L.fromClass(classOf[UserManager])
             .flatTap(_.info(s"Allocating UserManager with ${accessor} store."))
         },
-      EventManager.userPosts(accessor, 1.second),
+      EventManager.userPosts(accessor, 5.seconds),
       Supervisor[IO]
     )
       .mapN { (log, em, s) =>

@@ -7,7 +7,6 @@ import cats.{ Functor, NonEmptyTraverse, Reducible }
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import ru.nh.user.UserAccessor.{ PostRow, UserRow }
 import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
@@ -133,13 +132,13 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
     ensureUpdated(sql)
   }
 
-  def getFriends(userId: UUID): Stream[ConnectionIO, UUID] =
+  def getFriends(userId: UUID): ConnectionIO[List[UUID]] =
     sql"""SELECT friend_id
          |FROM friends 
          |WHERE user_id = $userId
          """.stripMargin
       .query[UUID]
-      .stream
+      .to[List]
 
   def addPost(userId: UUID, text: String): ConnectionIO[UUID] =
     sql"""INSERT INTO posts(user_id, text)
@@ -203,15 +202,19 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
       .to[List]
       .map(Chain.fromSeq)
 
-  def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[ConnectionIO, PostRow] =
+  def getPostsLog[R[_]: NonEmptyTraverse](
+      userIds: R[UUID],
+      lastIndex: Long,
+      limit: Int
+  ): ConnectionIO[Vector[PostRow]] =
     sql"""SELECT user_id, post_id, index, created_at, text
          |FROM posts p
          |WHERE ${Fragments.in(fr"p.user_id", userIds)}
          |AND p.index > $lastIndex
          |ORDER BY index
-         |LIMIT 100""".stripMargin
+         |LIMIT $limit""".stripMargin
       .query[PostRow]
-      .stream
+      .to[Vector]
 
   def getLastPost(userId: UUID): OptionT[ConnectionIO, PostRow] = OptionT {
     sql"""SELECT user_id, post_id, index, created_at, text

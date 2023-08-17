@@ -2,7 +2,6 @@ package ru.nh.user
 
 import cats.data.{ Chain, OptionT }
 import cats.{ Functor, NonEmptyTraverse, Reducible, ~> }
-import fs2.Stream
 import ru.nh.user.UserAccessor.{ PostRow, UserAccessorMapK, UserRow }
 
 import java.time.{ Instant, LocalDate }
@@ -18,7 +17,7 @@ trait UserAccessor[F[_]] {
 
   def addFriend(userId: UUID, friendId: UUID): F[Unit]
   def deleteFriend(userId: UUID, friendId: UUID): F[Unit]
-  def getFriends(userId: UUID): Stream[F, UUID]
+  def getFriends(userId: UUID): F[List[UUID]]
 
   def addPost(userId: UUID, text: String): F[UUID]
   def getPost(postId: UUID): F[Option[PostRow]]
@@ -28,8 +27,9 @@ trait UserAccessor[F[_]] {
   def userPosts(userId: UUID, fromIndex: Long): F[Chain[PostRow]]
   def getPostsLog[R[_]: NonEmptyTraverse](
       userIds: R[UUID],
-      lastIndex: Long
-  ): Stream[F, PostRow]
+      lastIndex: Long,
+      limit: Int
+  ): F[Vector[PostRow]]
   def getLastPost(userId: UUID): OptionT[F, PostRow]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
@@ -92,8 +92,8 @@ object UserAccessor {
 
     def deleteFriend(userId: UUID, friendId: UUID): G[Unit] =
       write(underlying.deleteFriend(userId, friendId))
-    def getFriends(userId: UUID): Stream[G, UUID] =
-      underlying.getFriends(userId).translate(read)
+    def getFriends(userId: UUID): G[List[UUID]] =
+      read(underlying.getFriends(userId))
 
     def addPost(userId: UUID, text: String): G[UUID] =
       write(underlying.addPost(userId, text))
@@ -113,8 +113,8 @@ object UserAccessor {
     def userPosts(userId: UUID, fromIndex: Long): G[Chain[PostRow]] =
       read(underlying.userPosts(userId, fromIndex))
 
-    def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long): Stream[G, PostRow] =
-      underlying.getPostsLog(userIds, lastIndex).translate(read)
+    def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long, limit: Int): G[Vector[PostRow]] =
+      read(underlying.getPostsLog(userIds, lastIndex, limit))
 
     def getLastPost(userId: UUID): OptionT[G, PostRow] =
       underlying.getLastPost(userId).mapK(read)

@@ -36,16 +36,25 @@ abstract class EventManager[K, E](implicit log: Logger[IO]) {
         )
     })
 
-  def subscribe(key: K): Stream[IO, E] = Stream.force {
-    getLatestEvent(key).value.map {
-      case Some(event) if event.completed => Stream.emit(event.v)
-      case opt =>
-        Stream.eval(addSubscription(key, opt)).flatMap { subscription =>
-          Stream.fromOption(opt.map(_.v)) ++
-            subscription.updates.subscribe(SubscriptionMaxQueued)
+  def subscribe(key: K): Stream[IO, E] = Stream
+    .force {
+      log.debug(s"Start subscription for [$key]") *>
+        getLatestEvent(key).value.map {
+          case Some(event) if event.completed => Stream.emit(event.v)
+          case opt =>
+            Stream.eval(addSubscription(key, opt)).flatMap { subscription =>
+              Stream.fromOption(opt.map(_.v)) ++
+                subscription.updates.subscribe(SubscriptionMaxQueued)
+            }
         }
     }
-  }
+    .onFinalizeCase(e => log.debug(s"Finalized subscription [$key], $e"))
+
+  def subscribeFrom(key: K, offset: Int): Stream[IO, E] =
+    Stream
+      .eval(log.debug(s"Start subscription for [$key], offset $offset") *> addSubscription(key, none))
+      .flatMap(_.updates.subscribe(SubscriptionMaxQueued).drop(offset.toLong))
+      .onFinalizeCase(e => log.debug(s"Finalized subscription [$key], $e"))
 
   private def addSubscription(key: K, lastEvent: Option[TopicEvent[K, E]]): IO[Subscription[K, E]] = {
     def add(map: Map[K, Subscription[K, E]]): IO[(Map[K, Subscription[K, E]], IO[Subscription[K, E]])] = {
@@ -158,7 +167,7 @@ object EventManager {
       )
 
       instance[UUID, PostRow](
-        (ids, from) => accessor.getPostsLog(ids, from).map(toEvent),
+        (ids, from) => Stream.evalSeq(accessor.getPostsLog(ids, from, SubscriptionMaxQueued)).map(toEvent),
         (_, value) => IO(toEvent(value)),
         id => accessor.getLastPost(id).map(toEvent),
         tickInterval
