@@ -3,6 +3,7 @@ package ru.nh.user.http
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
+import io.circe.syntax._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
@@ -11,6 +12,7 @@ import sttp.model.StatusCode
 
 import java.util.UUID
 class UserEndpoints(authService: AuthService, userService: UserService)(implicit L: LoggerFactory[IO]) {
+  import ru.nh.http.json.all._
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[UserEndpoints])
 
@@ -161,7 +163,7 @@ class UserEndpoints(authService: AuthService, userService: UserService)(implicit
           fs2.Stream
             .resource(userService.postFeed(UUID.fromString(auth.userId), offsetLimit._1, offsetLimit._2))
             .flatMap(_.stream)
-            .map(_.toString)
+            .map(_.asJson.toString())
             .through(fs2.text.utf8.encode)
             .onFinalizeCase(ec => log.debug(s"Finalized http post feed [${auth.userId}], $ec"))
         }
