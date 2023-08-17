@@ -10,34 +10,26 @@ import java.util.UUID
 
 trait UserAccessor[F[_]] {
   def save(u: RegisterUserCommand): F[UserRow]
-
   def saveBatch[R[_]: Reducible: Functor](u: R[RegisterUserCommand]): F[Unit]
   def getUserRow(userId: UUID): F[Option[UserRow]]
-
   def getUser(userId: UUID): F[Option[User]]
-
   def getHobbies(userId: UUID): F[List[String]]
-
   def search(firstNamePrefix: String, lastNamePrefix: String): F[Option[UserRow]]
 
   def addFriend(userId: UUID, friendId: UUID): F[Unit]
-
   def deleteFriend(userId: UUID, friendId: UUID): F[Unit]
+  def getFriends(userId: UUID): Stream[F, UUID]
 
   def addPost(userId: UUID, text: String): F[UUID]
   def getPost(postId: UUID): F[Option[PostRow]]
   def updatePost(postId: UUID, text: String): F[Unit]
   def deletePost(postId: UUID): F[Unit]
-
   def postFeed(userId: UUID, offset: Int, limit: Int): F[Chain[PostRow]]
-
   def userPosts(userId: UUID, fromIndex: Long): F[Chain[PostRow]]
-
   def getPostsLog[R[_]: NonEmptyTraverse](
       userIds: R[UUID],
       lastIndex: Long
   ): Stream[F, PostRow]
-
   def getLastPost(userId: UUID): OptionT[F, PostRow]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
@@ -100,6 +92,8 @@ object UserAccessor {
 
     def deleteFriend(userId: UUID, friendId: UUID): G[Unit] =
       write(underlying.deleteFriend(userId, friendId))
+    def getFriends(userId: UUID): Stream[G, UUID] =
+      underlying.getFriends(userId).translate(read)
 
     def addPost(userId: UUID, text: String): G[UUID] =
       write(underlying.addPost(userId, text))

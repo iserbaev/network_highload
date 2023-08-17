@@ -48,6 +48,8 @@ class InMemoryUserAccessor(
 
   def deleteFriend(userId: UUID, friendId: UUID): IO[Unit] =
     friends.update(_.updatedWith(userId)(_.map(_ - friendId))).void
+  def getFriends(userId: UUID): Stream[IO, UUID] =
+    Stream.evalSeq(friends.get.map(_.getOrElse(userId, Set.empty).toList))
 
   def addPost(userId: UUID, text: String): IO[UUID] =
     (IO.realTimeInstant, UUIDGen.randomUUID[IO], counter.updateAndGet(_ + 1)).flatMapN { (now, postId, nextIndex) =>

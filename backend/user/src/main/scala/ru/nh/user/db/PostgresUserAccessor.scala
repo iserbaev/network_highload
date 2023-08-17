@@ -133,11 +133,22 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
     ensureUpdated(sql)
   }
 
+  def getFriends(userId: UUID): Stream[ConnectionIO, UUID] =
+    sql"""SELECT friend_id
+         |FROM friends 
+         |WHERE user_id = $userId
+         """.stripMargin
+      .query[UUID]
+      .stream
+
   def addPost(userId: UUID, text: String): ConnectionIO[UUID] =
     sql"""INSERT INTO posts(user_id, text)
          |VALUES ($userId, $text)
          |RETURNING post_id
-         """.stripMargin.update.withGeneratedKeys[UUID]("post_id").compile.lastOrError
+         """.stripMargin.update
+      .withGeneratedKeys[UUID]("post_id")
+      .compile
+      .lastOrError
 
   def getPost(postId: UUID): ConnectionIO[Option[PostRow]] =
     sql"""SELECT user_id, post_id, index, created_at, text
