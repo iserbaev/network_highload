@@ -70,7 +70,7 @@ class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts, val 
               logicFiber.cancel.attempt *>
               log.debug(s"Finalized post feed [$userId]: $ec.")
         }
-        .as(PostFeed(posts.stream.drop(offset.toLong).map(_.toPost)))
+        .as(PostFeed(posts.stream.drop(offset.toLong).take(limit.toLong).map(_.toPost)))
     }
   }
 }
