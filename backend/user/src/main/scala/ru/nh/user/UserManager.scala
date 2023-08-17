@@ -64,11 +64,10 @@ class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts, val 
       // all registered updates and observe gRPC stream close from
       // a server side.
       Resource
-        .makeCase(supervisor.supervise(logic.compile.drain)) {
-          (logicFiber, ec) =>
-            posts.close *>
-              logicFiber.cancel.attempt *>
-              log.debug(s"Finalized post feed [$userId]: $ec.")
+        .makeCase(supervisor.supervise(logic.compile.drain)) { (logicFiber, ec) =>
+          posts.close *>
+            logicFiber.cancel.attempt *>
+            log.debug(s"Finalized post feed [$userId]: $ec.")
         }
         .as(PostFeed(posts.stream.drop(offset.toLong).take(limit.toLong).map(_.toPost)))
     }

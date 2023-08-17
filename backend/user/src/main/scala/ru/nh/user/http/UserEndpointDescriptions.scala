@@ -2,13 +2,13 @@ package ru.nh.user.http
 
 import cats.effect.IO
 import cats.syntax.all._
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
-import org.typelevel.log4cats.{Logger, LoggerFactory}
+import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
+import io.circe.{ Decoder, Encoder }
+import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http.ErrorResponse
-import ru.nh.user.http.UserEndpointDescriptions.{PostCreate, PostUpdate}
-import ru.nh.user.{Id, Post, RegisterUserCommand, User}
+import ru.nh.user.http.UserEndpointDescriptions.{ PostCreate, PostUpdate }
+import ru.nh.user.{ Id, Post, RegisterUserCommand, User }
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.model.StatusCode
 import sttp.tapir._
@@ -117,8 +117,8 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
     securedEndpoint.get
       .in("post" / "feed")
       .in(path[Int]("offset").and(path[Int]("limit")))
-//      .out(NoCacheControlHeader)
-//      .out(XAccelBufferingHeader)
+      .out(NoCacheControlHeader)
+      .out(XAccelBufferingHeader)
       .out(streamTextBody(Fs2Streams[IO])(CodecFormat.TextPlain(), Some(StandardCharsets.UTF_8)))
 
 }
