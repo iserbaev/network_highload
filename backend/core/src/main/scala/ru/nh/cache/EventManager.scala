@@ -13,8 +13,26 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
+/** In-memory key-value store used as cache, message-broker with publish-subscribe
+  * pattern,
+  *
+  * invalidation by event state topic cleared on first event with completed flag
+  *
+  * underlying used fs2.Topic concurrency primitive
+  *
+  * cache updates by background task running with given interval
+  *
+  * @param log
+  *   log
+  * @tparam K
+  *   event key type parameter
+  * @tparam E
+  *   event value type parameter
+  */
 abstract class EventManager[K, E](implicit log: Logger[IO]) {
   import EventManager._
+
+  protected def tickPeriod: FiniteDuration
 
   protected def getLatestEvent(key: K): OptionT[IO, TopicEvent[K, E]]
   protected def buildTopicEvent(key: K, event: E): IO[TopicEvent[K, E]]
@@ -134,6 +152,12 @@ abstract class EventManager[K, E](implicit log: Logger[IO]) {
       log.debug(s"Finalized subscription for [$key].")
   }
 
+  private def ticks: Stream[IO, Unit] =
+    Stream
+      .awakeEvery[IO](tickPeriod) >> buildStream.evalMapChunk(updateState(_, resend = false))
+
+  def withStateSync: Resource[IO, EventManager[K, E]] = ticks.compile.drain.background.void.as(this)
+
 }
 
 object EventManager {
@@ -183,19 +207,14 @@ object EventManager {
     Resource
       .eval(Ref[IO].of(Map.empty[K, Subscription[K, E]]))
       .flatMap { subsState =>
-        val manager = new EventManager[K, E] {
+        new EventManager[K, E] {
+          override protected def tickPeriod: FiniteDuration                     = tickInterval
           protected def getLatestEvent(key: K): OptionT[IO, TopicEvent[K, E]]   = getLastEvent(key)
           protected def buildTopicEvent(key: K, event: E): IO[TopicEvent[K, E]] = buildEvent(key, event)
           protected def streamUpdates(ids: NonEmptyVector[K], fromIndex: Long): Stream[IO, TopicEvent[K, E]] =
             stream(ids, fromIndex)
           protected def state: State[K, E] = subsState
-        }
-
-        val ticks: Stream[IO, Unit] =
-          Stream
-            .awakeEvery[IO](tickInterval) >> manager.buildStream.evalMapChunk(manager.updateState(_, resend = false))
-
-        ticks.compile.drain.background.as(manager)
+        }.withStateSync
       }
 
 }
