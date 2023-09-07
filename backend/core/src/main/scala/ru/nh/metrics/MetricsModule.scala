@@ -1,4 +1,4 @@
-package ru.nh.user.metrics
+package ru.nh.metrics
 
 import cats.effect.IO
 import cats.effect.kernel.Resource

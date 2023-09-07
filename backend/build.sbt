@@ -105,7 +105,7 @@ lazy val core = Project(id = "core", base = file("core"))
   .dependsOn(api)
   .settings(
     commonSettings,
-    libraryDependencies ++= (Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.json.value),
+    libraryDependencies ++= (Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 

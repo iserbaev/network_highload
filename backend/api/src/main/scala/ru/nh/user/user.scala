@@ -1,6 +1,6 @@
 package ru.nh.user
 
-import java.time.{ Instant, LocalDate }
+import java.time.LocalDate
 import java.util.UUID
 
 final case class User(

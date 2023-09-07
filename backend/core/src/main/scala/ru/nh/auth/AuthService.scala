@@ -6,13 +6,12 @@ import io.circe.parser.decode
 import pdi.jwt._
 import pdi.jwt.algorithms.JwtHmacAlgorithm
 import ru.nh.auth.AuthService.{ Token, UserPassword }
-import ru.nh.user.UserAccessor
 
 import java.time.Instant
 import java.util.UUID
 import scala.util.Try
 
-class AuthService(userAccessor: UserAccessor[IO]) {
+class AuthService(loginAccessor: LoginAccessor[IO]) {
   import ru.nh.http.json.all._
 
   private val key: String            = "secretKey"
@@ -35,8 +34,11 @@ class AuthService(userAccessor: UserAccessor[IO]) {
         decode[UserPassword](claim.content).toTry
       }
 
+  def save(login: String, password: String): IO[Unit] =
+    loginAccessor.save(login, password)
+
   def login(id: String, password: String): IO[Option[AuthService.Token]] =
-    userAccessor.getUserRow(UUID.fromString(id)).map {
+    loginAccessor.get(id).map {
       _.flatMap { row =>
         Option.when(row.password == password)(buildToken(id, password))
       }
@@ -44,7 +46,7 @@ class AuthService(userAccessor: UserAccessor[IO]) {
 
   def authorize(token: String): IO[Option[AuthService.Auth]] =
     IO.fromTry(decodeToken(token)).flatMap { userPasswordFromToken =>
-      userAccessor.getUserRow(UUID.fromString(userPasswordFromToken.id)).map {
+      loginAccessor.get(userPasswordFromToken.id).map {
         _.flatMap { row =>
           Option.when(row.password == userPasswordFromToken.password)(
             AuthService.Auth(UUID.randomUUID().toString, userPasswordFromToken.id, Set(AuthService.Role.User))
@@ -66,7 +68,7 @@ object AuthService {
     val User: Role  = Role("network-highload-user")
   }
 
-  def apply(userAccessor: UserAccessor[IO]): Resource[IO, AuthService] =
+  def apply(loginAccessor: LoginAccessor[IO]): Resource[IO, AuthService] =
     Resource
-      .pure(new AuthService(userAccessor))
+      .pure(new AuthService(loginAccessor))
 }

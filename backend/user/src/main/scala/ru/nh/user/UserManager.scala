@@ -7,15 +7,22 @@ import fs2.concurrent.Channel
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.cache.EventManager
 import ru.nh.cache.EventManager.UserPosts
-import ru.nh.user.UserAccessor.PostRow
-import ru.nh.user.UserService.PostFeed
+import ru.nh.post.PostAccessor
+import ru.nh.post.PostAccessor.PostRow
+import ru.nh.user.PostService.PostFeed
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
-class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts, val supervisor: Supervisor[IO])(
+class UserManager(
+    val accessor: UserAccessor[IO],
+    val postAccessor: PostAccessor[IO],
+    val userPosts: UserPosts,
+    val supervisor: Supervisor[IO]
+)(
     implicit log: Logger[IO]
-) extends UserService {
+) extends UserService
+    with PostService {
   def register(userInfo: RegisterUserCommand): IO[User] =
     accessor.save(userInfo).map(_.toUser(userInfo.hobbies)) <* log.debug(show"save ${userInfo.name}")
 
@@ -34,16 +41,16 @@ class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts, val 
     accessor.deleteFriend(userId, friendId)
 
   def addPost(userId: UUID, text: String): IO[UUID] =
-    accessor.addPost(userId, text)
+    postAccessor.addPost(userId, text)
 
   def getPost(postId: UUID): IO[Option[Post]] =
-    accessor.getPost(postId).map(_.map(_.toPost))
+    postAccessor.getPost(postId).map(_.map(_.toPost))
 
   def updatePost(postId: UUID, text: String): IO[Unit] =
-    accessor.updatePost(postId, text)
+    postAccessor.updatePost(postId, text)
 
   def deletePost(postId: UUID): IO[Unit] =
-    accessor.deletePost(postId)
+    postAccessor.deletePost(postId)
 
   def postFeed(userId: UUID, offset: Int, limit: Int): Resource[IO, PostFeed] = Resource.suspend {
     Channel.unbounded[IO, PostRow].map { posts =>
@@ -75,18 +82,20 @@ class UserManager(val accessor: UserAccessor[IO], val userPosts: UserPosts, val 
 }
 
 object UserManager {
-  def apply(accessor: UserAccessor[IO])(implicit L: LoggerFactory[IO]): Resource[IO, UserService] =
+  def apply(accessor: UserAccessor[IO], postAccessor: PostAccessor[IO])(
+      implicit L: LoggerFactory[IO]
+  ): Resource[IO, UserManager] =
     (
       Resource
         .eval {
           L.fromClass(classOf[UserManager])
             .flatTap(_.info(s"Allocating UserManager with ${accessor} store."))
         },
-      EventManager.userPosts(accessor, 5.seconds),
+      EventManager.userPosts(postAccessor, 5.seconds),
       Supervisor[IO]
     )
       .mapN { (log, em, s) =>
-        new UserManager(accessor, em, s)(log)
+        new UserManager(accessor, postAccessor, em, s)(log)
       }
 
 }

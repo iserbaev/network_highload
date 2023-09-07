@@ -1,8 +1,7 @@
 package ru.nh.user
 
-import cats.data.{ Chain, OptionT }
-import cats.{ Functor, NonEmptyTraverse, Reducible, ~> }
-import ru.nh.user.UserAccessor.{ PostRow, UserAccessorMapK, UserRow }
+import cats.{ Functor, Reducible, ~> }
+import ru.nh.user.UserAccessor.{ UserAccessorMapK, UserRow }
 
 import java.time.{ Instant, LocalDate }
 import java.util.UUID
@@ -19,19 +18,6 @@ trait UserAccessor[F[_]] {
   def deleteFriend(userId: UUID, friendId: UUID): F[Unit]
   def getFriends(userId: UUID): F[List[UUID]]
 
-  def addPost(userId: UUID, text: String): F[UUID]
-  def getPost(postId: UUID): F[Option[PostRow]]
-  def updatePost(postId: UUID, text: String): F[Unit]
-  def deletePost(postId: UUID): F[Unit]
-  def postFeed(userId: UUID, offset: Int, limit: Int): F[Chain[PostRow]]
-  def userPosts(userId: UUID, fromIndex: Long): F[Chain[PostRow]]
-  def getPostsLog[R[_]: NonEmptyTraverse](
-      userIds: R[UUID],
-      lastIndex: Long,
-      limit: Int
-  ): F[Vector[PostRow]]
-  def getLastPost(userId: UUID): OptionT[F, PostRow]
-
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
     new UserAccessorMapK(this, read, write)
 }
@@ -44,27 +30,12 @@ object UserAccessor {
       surname: String,
       age: Int,
       city: String,
-      password: String,
       gender: Option[String],
       biography: Option[String],
       birthdate: Option[LocalDate]
   ) {
     def toUser(hobbies: List[String]): User =
       User(userId, name, surname, age, city, gender, birthdate, biography, hobbies)
-  }
-
-  final case class PostRow(
-      userId: UUID,
-      postId: UUID,
-      index: Long,
-      createdAt: Instant,
-      text: String
-  ) {
-    def toPost: Post =
-      Post(postId, text, userId, createdAt)
-  }
-  object PostRow {
-    implicit val ordering: Ordering[PostRow] = Ordering.by[PostRow, Instant](_.createdAt)
   }
 
   private[user] final class UserAccessorMapK[F[_], G[_]](underlying: UserAccessor[F], read: F ~> G, write: F ~> G)
@@ -94,29 +65,5 @@ object UserAccessor {
       write(underlying.deleteFriend(userId, friendId))
     def getFriends(userId: UUID): G[List[UUID]] =
       read(underlying.getFriends(userId))
-
-    def addPost(userId: UUID, text: String): G[UUID] =
-      write(underlying.addPost(userId, text))
-
-    def getPost(postId: UUID): G[Option[PostRow]] =
-      read(underlying.getPost(postId))
-
-    def updatePost(postId: UUID, text: String): G[Unit] =
-      write(underlying.updatePost(postId, text))
-
-    def deletePost(postId: UUID): G[Unit] =
-      write(underlying.deletePost(postId))
-
-    def postFeed(userId: UUID, offset: Int, limit: Int): G[Chain[PostRow]] =
-      read(underlying.postFeed(userId, offset, limit))
-
-    def userPosts(userId: UUID, fromIndex: Long): G[Chain[PostRow]] =
-      read(underlying.userPosts(userId, fromIndex))
-
-    def getPostsLog[R[_]: NonEmptyTraverse](userIds: R[UUID], lastIndex: Long, limit: Int): G[Vector[PostRow]] =
-      read(underlying.getPostsLog(userIds, lastIndex, limit))
-
-    def getLastPost(userId: UUID): OptionT[G, PostRow] =
-      underlying.getLastPost(userId).mapK(read)
   }
 }

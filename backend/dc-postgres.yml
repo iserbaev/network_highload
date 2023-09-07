@@ -1,0 +1,28 @@
+version: '3.5'
+
+services:
+  postgres:
+    image: postgres:15.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres13:/data/postgres
+    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track=all -c max_connections=200
+    ports:
+      - "5432:5432"
+#  pgadmin:
+#    image: dpage/pgadmin4:7.1
+#    environment:
+#      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+#      - PGADMIN_DEFAULT_PASSWORD=root
+#    ports:
+#      - "8888:80"
+
+volumes:
+  postgres13:
+
+#docker-compose -p nh -f dc-postgres.yml up -d
+
+#host.docker.internal:5432

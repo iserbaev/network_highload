@@ -6,8 +6,8 @@ import cats.syntax.all._
 import fs2.Stream
 import fs2.concurrent.Topic
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
-import ru.nh.user.UserAccessor
-import ru.nh.user.UserAccessor.PostRow
+import ru.nh.post.PostAccessor
+import ru.nh.post.PostAccessor.PostRow
 
 import java.time.Instant
 import java.util.UUID
@@ -178,7 +178,7 @@ object EventManager {
 
   val SubscriptionMaxQueued = 128
 
-  def userPosts(accessor: UserAccessor[IO], tickInterval: FiniteDuration)(
+  def userPosts(accessor: PostAccessor[IO], tickInterval: FiniteDuration)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, EventManager[UUID, PostRow]] =
     Resource.eval(L.fromClass(classOf[UserPosts])).flatMap { implicit log =>

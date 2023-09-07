@@ -10,10 +10,13 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
+import ru.nh.auth.AuthModule
+import ru.nh.config.ServerConfig
+import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
-import ru.nh.user.db.{ Populate, PostgresModule }
-import ru.nh.user.http.HttpModule
-import ru.nh.user.metrics.MetricsModule
+import ru.nh.http.HttpModule
+import ru.nh.metrics.MetricsModule
+import ru.nh.user.db.Populate
 import ru.nh.user.{ UserAccessor, UserModule }
 
 object UserServiceCli
@@ -30,7 +33,7 @@ object UserCli {
   def program(migrate: Boolean, mock: Boolean, populate: Boolean): IO[ExitCode] =
     IO
       .fromTry(
-        ConfigSource.default.load[Config].leftMap(fails => new RuntimeException(fails.prettyPrint())).toTry
+        ConfigSource.default.load[ServerConfig].leftMap(fails => new RuntimeException(fails.prettyPrint())).toTry
       )
       .flatMap { config =>
         implicit val loggerFactory: LoggerFactory[IO]      = Slf4jFactory.create[IO]
@@ -62,8 +65,15 @@ object UserCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              UserModule(pg)
-                .flatMap(u => HttpModule.resource(config.http, u, m).evalTap(_ => populateProgram(u.accessor)))
+              AuthModule.inMemory.flatMap { auth => // TODO Add persistent Auth
+                UserModule(pg, auth)
+                  .flatMap(u =>
+                    HttpModule
+                      .resource(config.http, u.endpoints, auth, m, "user endpoints")
+                      .evalTap(_ => populateProgram(u.accessor))
+                  )
+              }
+
             }
 
         migrateOrValidate.unlessA(mock) *> runProgram.useForever

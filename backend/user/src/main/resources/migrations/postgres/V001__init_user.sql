@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS users
     surname    VARCHAR(128)                               NOT NULL,
     age        INTEGER                                    NOT NULL,
     city       VARCHAR(128)                               NOT NULL,
-    password   VARCHAR(256)                               NOT NULL,
     gender     VARCHAR(128),
     biography  TEXT,
     birthdate  DATE
