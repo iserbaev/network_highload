@@ -6,9 +6,14 @@ user-service-cli)
     exec "$(dirname "$0")"/user-service-cli "$@"
     ;;
 
-nh-client-cli)
+conversation-service-cli)
     shift
-    exec "$(dirname "$0")"/nh-client-cli "$@"
+    exec "$(dirname "$0")"/conversation-service-cli "$@"
+    ;;
+
+auth-service-cli)
+    shift
+    exec "$(dirname "$0")"/auth-service-cli "$@"
     ;;
 
 bash)

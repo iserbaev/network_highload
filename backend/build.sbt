@@ -202,9 +202,11 @@ lazy val user = Project(id = "user", base = file("user"))
 lazy val root = Project(id = "network-highload-all", base = file("."))
   .enablePlugins(GitBranchPrompt, JavaAppPackaging)
   .aggregate(api, core, auth, user, conversation)
-  .dependsOn(user)
+  .dependsOn(auth, user, conversation)
   .settings(
     Compile / mainClass  := Some("ru.nh.user.cli.UserServiceCli"),
+    Compile / discoveredMainClasses ++= Seq("ru.nh.conversation.cli.ConversationServiceCli"),
+    Compile / discoveredMainClasses ++= Seq("ru.nh.auth.cli.AuthServiceCli"),
     executableScriptName := "user-service-cli",
     bashScriptExtraDefines ++= Seq(
       """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",

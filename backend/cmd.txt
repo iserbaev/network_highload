@@ -1,6 +1,12 @@
 sbt Universal/stage
 cd target/universal/stage
-bin/user-service-cli server
+bin/user-service-cli server --force-migrate
+
+cd target/universal/stage
+bin/auth-service-cli server --force-migrate
+
+cd target/universal/stage
+bin/conversation-service-cli server --force-migrate
 
 sbt Docker/publishLocal
 
