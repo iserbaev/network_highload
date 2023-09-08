@@ -13,6 +13,8 @@ import ru.nh.post.PostAccessor.PostRow
 import java.util.UUID
 
 class PostgresPostAccessor extends PostAccessor[ConnectionIO] {
+  import ru.nh.db.ensureUpdated
+
   def addPost(userId: UUID, text: String): ConnectionIO[UUID] =
     sql"""INSERT INTO posts(user_id, text)
          |VALUES ($userId, $text)
@@ -99,20 +101,14 @@ class PostgresPostAccessor extends PostAccessor[ConnectionIO] {
       .query[PostRow]
       .option
   }
-
-  private def ensureUpdated(result: ConnectionIO[Int]): ConnectionIO[Unit] =
-    result.flatMap { updated =>
-      if (updated != 1) {
-        FC.raiseError(new RuntimeException(s"expected 1 row updated but got $updated"))
-      } else FC.unit
-    }
 }
 
 object PostgresPostAccessor {
   import ru.nh.db.transactors._
   import ru.nh.db.transactors.syntax._
-  def resource(implicit L: LoggerFactory[IO]): Resource[IO, PostgresPostAccessor] = Resource.eval {
-    L.fromClass(classOf[PostgresPostAccessor]).map { _ =>
+
+  def resource: Resource[IO, PostgresPostAccessor] = Resource.eval {
+    IO {
       new PostgresPostAccessor
     }
   }

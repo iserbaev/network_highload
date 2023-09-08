@@ -16,6 +16,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
+  import ru.nh.db.ensureUpdated
   private def getUserStatement(userId: UUID): Fragment =
     sql"""SELECT user_id, created_at, name, surname, age, city, gender, biography, birthdate
          |FROM users
@@ -138,20 +139,14 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
          """.stripMargin
       .query[UUID]
       .to[List]
-
-  private def ensureUpdated(result: ConnectionIO[Int]): ConnectionIO[Unit] =
-    result.flatMap { updated =>
-      if (updated != 1) {
-        FC.raiseError(new RuntimeException(s"expected 1 row updated but got $updated"))
-      } else FC.unit
-    }
 }
 
 object PostgresUserAccessor {
   import ru.nh.db.transactors._
   import ru.nh.db.transactors.syntax._
-  def resource(implicit L: LoggerFactory[IO]): Resource[IO, PostgresUserAccessor] = Resource.eval {
-    L.fromClass(classOf[PostgresUserAccessor]).map { _ =>
+
+  def resource: Resource[IO, PostgresUserAccessor] = Resource.eval {
+    IO {
       new PostgresUserAccessor
     }
   }
