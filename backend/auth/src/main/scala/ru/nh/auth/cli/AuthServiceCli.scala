@@ -57,7 +57,7 @@ object AuthCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthModule.resource(pg).flatMap { auth =>
+              AuthModule.resource(pg, config.auth.key).flatMap { auth =>
                 HttpModule
                   .resource(config.http, auth.endpoints, m, "auth")
               }

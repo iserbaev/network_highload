@@ -341,7 +341,7 @@ object Dependencies {
   val metrics = Def.setting(prometheus)
 
   val http = Def.setting(
-    http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++
+    http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++ http4sBlazeClient ++
       http4sBlazeCore ++ http4sBlazeServer ++ http4sNettyCore ++ http4sNettyServer ++
       nettyTransport
   )

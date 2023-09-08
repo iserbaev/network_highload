@@ -58,7 +58,7 @@ object ConversationCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthService.client.flatMap { auth =>
+              AuthService.client(config.auth.host, config.auth.port).flatMap { auth =>
                 ConversationModule
                   .resource(pg, auth)
                   .flatMap(conversationModule =>

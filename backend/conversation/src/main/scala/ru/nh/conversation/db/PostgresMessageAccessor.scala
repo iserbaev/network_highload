@@ -15,8 +15,8 @@ class PostgresMessageAccessor extends MessageAccessor[ConnectionIO] {
   import ru.nh.db.ensureUpdated
 
   def logMessage(sender: UUID, conversationId: UUID, message: String): ConnectionIO[Unit] = ensureUpdated {
-    sql"""INSERT INTO message_log(sender, conversation_id, conversation_index, message)
-         |VALUES ($sender, $conversationId, coalesce(conversation_index + 1, 1), $message) 
+    sql"""INSERT INTO message_log(sender, conversation_id, message)
+         |VALUES ($sender, $conversationId, $message)
          """.stripMargin.update.run
   }
 

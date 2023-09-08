@@ -15,10 +15,10 @@ trait AuthModule {
 }
 
 object AuthModule {
-  def resource(postgresModule: PostgresModule)(
+  def resource(postgresModule: PostgresModule, key: String)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, AuthModule] =
-    PostgresLoginAccessor.inIO(postgresModule.rw).flatMap(AuthService.apply).map { as =>
+    PostgresLoginAccessor.inIO(postgresModule.rw).flatMap(AuthService.apply(key, _)).map { as =>
       new AuthModule {
         val service: AuthService = as
 

@@ -10,7 +10,7 @@ import ru.nh.{ Id, UserService }
 import sttp.model.StatusCode
 
 import java.util.UUID
-class UserEndpoints(authService: AuthService, userService: UserService)(
+class UserEndpoints(authService: AuthService, userService: UserService, appKey: String)(
     implicit L: LoggerFactory[IO]
 ) {
 
@@ -22,13 +22,15 @@ class UserEndpoints(authService: AuthService, userService: UserService)(
     .serverLogic { cmd =>
       userService
         .register(cmd)
-        .flatTap(u => authService.save(u.id.toString, cmd.password))
+        .flatTap(u => authService.save(u.id.toString, cmd.password, appKey))
         .attempt
         .map {
           _.map(u => Id(u.id))
             .leftMap {
-              case _: IllegalArgumentException => (StatusCode.BadRequest, none)
-              case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, "", 0).some)
+              case _: IllegalArgumentException =>
+                (StatusCode.BadRequest, none)
+              case ex =>
+                (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, "", 0).some)
             }
         }
     }

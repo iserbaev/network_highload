@@ -70,8 +70,8 @@ object UserCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthService.client.flatMap { auth =>
-                UserModule(pg, auth)
+              AuthService.client(config.auth.host, config.auth.port).flatMap { auth =>
+                UserModule(pg, auth, config.auth.key)
                   .flatMap(u =>
                     HttpModule
                       .resource(config.http, u.endpoints, m, "user")

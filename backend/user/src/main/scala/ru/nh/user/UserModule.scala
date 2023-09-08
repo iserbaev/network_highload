@@ -22,7 +22,7 @@ trait UserModule {
 
 object UserModule {
 
-  def apply(postgresModule: PostgresModule, authService: AuthService)(
+  def apply(postgresModule: PostgresModule, authService: AuthService, appKey: String)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, UserModule] =
     (PostgresPostAccessor.inIO(postgresModule.rw), PostgresUserAccessor.inIO(postgresModule.rw))
@@ -34,7 +34,7 @@ object UserModule {
             val service: UserService = um
 
             val endpoints: NonEmptyList[SEndpoint] =
-              new UserEndpoints(authService, um).all ::: new PostEndpoints(authService, um).all
+              new UserEndpoints(authService, um, appKey).all ::: new PostEndpoints(authService, um).all
           }
         }
       }

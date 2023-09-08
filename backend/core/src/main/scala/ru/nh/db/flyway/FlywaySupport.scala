@@ -32,7 +32,6 @@ trait FlywaySupport {
         config.user,
         config.password
       )
-      .baselineOnMigrate(true)
       .locations(locations: _*)
       .table(flywayTableName)
       .mixed(mixed match {
