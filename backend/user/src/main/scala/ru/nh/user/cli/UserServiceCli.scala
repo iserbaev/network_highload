@@ -8,8 +8,6 @@ import com.monovore.decline.effect.CommandIOApp
 import io.prometheus.client.CollectorRegistry
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
-import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 import ru.nh.auth.AuthModule
 import ru.nh.config.ServerConfig
 import ru.nh.db.PostgresModule
@@ -31,10 +29,7 @@ object UserServiceCli
 
 object UserCli {
   def program(migrate: Boolean, mock: Boolean, populate: Boolean): IO[ExitCode] =
-    IO
-      .fromTry(
-        ConfigSource.default.load[ServerConfig].leftMap(fails => new RuntimeException(fails.prettyPrint())).toTry
-      )
+    ServerConfig.load
       .flatMap { config =>
         implicit val loggerFactory: LoggerFactory[IO]      = Slf4jFactory.create[IO]
         implicit val logger: SelfAwareStructuredLogger[IO] = loggerFactory.getLoggerFromClass(classOf[UserCli.type])
