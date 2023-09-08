@@ -1,6 +1,6 @@
 package ru.nh
 
-import doobie.{ConnectionIO, FC}
+import doobie.{ ConnectionIO, FC }
 
 package object db {
   def ensureUpdated(result: ConnectionIO[Int]): ConnectionIO[Unit] =

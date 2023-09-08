@@ -12,7 +12,7 @@ import ru.nh.user.UserAccessor
 import java.util.UUID
 import scala.collection.SortedSet
 
-class InMemoryPostAccessor (
+class InMemoryPostAccessor(
     userAccessor: UserAccessor[IO],
     posts: Ref[IO, Map[UUID, PostRow]],
     userPostIds: Ref[IO, Map[UUID, Set[UUID]]],

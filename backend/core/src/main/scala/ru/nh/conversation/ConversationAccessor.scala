@@ -9,11 +9,11 @@ import java.time.Instant
 import java.util.UUID
 
 trait ConversationAccessor[F[_]] {
-  def logConversation(participant: UUID, privateParticipant: Option[UUID]): F[ConversationRow]
+  def logConversation(participant: UUID, privateParticipant: Option[UUID]): F[UUID]
 
   def addParticipant(conversationId: UUID, participant: UUID): F[Unit]
 
-  def getPrivateConversation(firstPerson: UUID, participant: UUID): F[ConversationRow]
+  def getPrivateConversation(firstPerson: UUID, participant: UUID): F[Option[ConversationRow]]
 
   def getConversations(participant: UUID, limit: Int): F[Chain[ConversationRow]]
   def mapK[G[_]](read: F ~> G, write: F ~> G): ConversationAccessor[G] =
@@ -32,18 +32,18 @@ object ConversationAccessor {
       new Conversation(id, participant, privateConversation, privateConversationParticipant)
   }
 
-  private[user] final class ConversationAccessorMapK[F[_], G[_]](
+  private[conversation] final class ConversationAccessorMapK[F[_], G[_]](
       underlying: ConversationAccessor[F],
       read: F ~> G,
       write: F ~> G
   ) extends ConversationAccessor[G] {
-    def logConversation(participant: UUID, privateParticipant: Option[UUID]): G[ConversationRow] =
+    def logConversation(participant: UUID, privateParticipant: Option[UUID]): G[UUID] =
       write(underlying.logConversation(participant, privateParticipant))
 
     def addParticipant(conversationId: UUID, participant: UUID): G[Unit] =
       write(underlying.addParticipant(conversationId, participant))
 
-    def getPrivateConversation(firstPerson: UUID, participant: UUID): G[ConversationRow] =
+    def getPrivateConversation(firstPerson: UUID, participant: UUID): G[Option[ConversationRow]] =
       read(underlying.getPrivateConversation(firstPerson, participant))
 
     def getConversations(participant: UUID, limit: Int): G[Chain[ConversationRow]] =

@@ -1,11 +1,11 @@
 package ru.nh.db
 
-import cats.effect.{IO, Resource}
+import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import com.zaxxer.hikari.metrics.MetricsTrackerFactory
 import doobie.ConnectionIO
 import doobie.implicits._
-import org.typelevel.log4cats.{Logger, LoggerFactory}
+import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.db.flyway.MixedTransactions
 import ru.nh.db.transactors._
 import ru.nh.db.transactors.syntax._
@@ -37,7 +37,7 @@ object PostgresModule {
       metricsEnabled: Boolean
   )
 
-  final case class Migrations(locations: List[String], mixed: MixedTransactions)
+  final case class Migrations(locations: List[String], mixed: MixedTransactions, flywayTableName: String)
 
   def apply(config: Config, metricsTrackerFactory: MetricsTrackerFactory)(
       implicit L: LoggerFactory[IO]

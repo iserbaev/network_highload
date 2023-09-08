@@ -7,7 +7,7 @@ import java.util.UUID
 
 trait MessageService {
 
-  def addMessage(sender: UUID, conversationId: UUID, message: String): IO[Message]
+  def addMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit]
 
   def getMessages(conversationId: UUID): IO[Chain[Message]]
 

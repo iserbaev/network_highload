@@ -1,10 +1,11 @@
 package ru.nh
 
-import cats.effect.{IO, Resource}
+import cats.effect.{ IO, Resource }
 import fs2.Stream
-import PostService.PostFeed
 
 import java.util.UUID
+
+import PostService.PostFeed
 
 trait PostService {
   def addPost(userId: UUID, text: String): IO[UUID]

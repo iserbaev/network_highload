@@ -23,7 +23,8 @@ trait FlywaySupport {
   def configureFlywayDataSource(
       config: DataSourceConfig,
       locations: List[String],
-      mixed: MixedTransactions
+      mixed: MixedTransactions,
+      flywayTableName: String
   ): IO[Flyway] = IO.blocking {
     Flyway.configure
       .dataSource(
@@ -32,6 +33,7 @@ trait FlywaySupport {
         config.password
       )
       .locations(locations: _*)
+      .table(flywayTableName)
       .mixed(mixed match {
         case MixedTransactions.Allow => true
         case MixedTransactions.Deny  => false
@@ -39,11 +41,11 @@ trait FlywaySupport {
       .load()
   }
 
-  def migrate(config: DataSourceConfig, locations: List[String], mixed: MixedTransactions)(
+  def migrate(config: DataSourceConfig, locations: List[String], mixed: MixedTransactions, flywayTableName: String)(
       implicit log: Logger[IO]
   ): IO[MigrateResult] =
     log.info(s"Running migrations from: [${locations.iterator.mkString(", ")}]") *>
-      configureFlywayDataSource(config, locations, mixed)
+      configureFlywayDataSource(config, locations, mixed, flywayTableName)
         .map(_.migrate())
         .flatTap {
           case e: MigrateErrorResult =>
@@ -55,11 +57,11 @@ trait FlywaySupport {
             log.info(s"Migration success after ${r.migrationsExecuted} executed migrations.")
         }
 
-  def validate(config: DataSourceConfig, locations: List[String], mixed: MixedTransactions)(
+  def validate(config: DataSourceConfig, locations: List[String], mixed: MixedTransactions, flywayTableName: String)(
       implicit log: Logger[IO]
   ): IO[Unit] =
     log.info(s"Validating migrations from: [${locations.iterator.mkString(", ")}]") *>
-      configureFlywayDataSource(config, locations, mixed)
+      configureFlywayDataSource(config, locations, mixed, flywayTableName)
         .map(_.validateWithResult())
         .flatMap { result =>
           if (result.validationSuccessful) IO.unit

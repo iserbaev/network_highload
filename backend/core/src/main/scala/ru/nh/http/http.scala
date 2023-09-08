@@ -4,12 +4,12 @@ import cats.effect.IO
 import cats.syntax.all._
 import ru.nh.auth.AuthService
 import sttp.capabilities.fs2.Fs2Streams
-import sttp.model.{ Header, StatusCode }
 import sttp.model.headers.CacheDirective
+import sttp.model.{ Header, StatusCode }
 import sttp.tapir.EndpointIO.FixedHeader
 import sttp.tapir.json.circe.jsonBody
-import sttp.tapir.{ Endpoint, EndpointInput, endpoint, header, statusCode }
 import sttp.tapir.server.{ PartialServerEndpoint, ServerEndpoint }
+import sttp.tapir.{ Endpoint, EndpointInput, endpoint, header, statusCode }
 
 package object http {
   import json.all._

@@ -109,6 +109,37 @@ lazy val core = Project(id = "core", base = file("core"))
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 
+lazy val conversation = Project(id = "conversation", base = file("conversation"))
+  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(api, core)
+  .settings(
+    commonSettings,
+    buildInfoKeys := Seq[BuildInfoKey](
+      name,
+      version,
+      scalaVersion,
+      sbtVersion,
+      BuildInfoKey.map(git.gitCurrentBranch) { case (_, branch) =>
+        "gitBranch" -> branch
+      },
+      BuildInfoKey.map(git.gitHeadCommit) { case (_, sha) =>
+        "gitCommit" -> sha.orNull
+      }
+    ),
+    buildInfoPackage := "ru.nh.conversation.cli",
+    buildInfoOptions ++= Seq(
+      BuildInfoOption.BuildTime,
+      BuildInfoOption.ToJson
+    ),
+    Compile / run / fork := true,
+    Compile / run / javaOptions ++= Seq(
+      "-Dconfig.file=../src/universal/conf/application.conf",
+      "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
+    ),
+    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= Dependencies.commonTest.value,
+  )
+
 lazy val user = Project(id = "user", base = file("user"))
   .enablePlugins(BuildInfoPlugin)
   .dependsOn(api, core)

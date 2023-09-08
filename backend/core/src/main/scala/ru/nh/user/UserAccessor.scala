@@ -1,10 +1,10 @@
 package ru.nh.user
 
-import cats.{Functor, Reducible, ~>}
-import ru.nh.user.UserAccessor.{UserAccessorMapK, UserRow}
-import ru.nh.{RegisterUserCommand, User}
+import cats.{ Functor, Reducible, ~> }
+import ru.nh.user.UserAccessor.{ UserAccessorMapK, UserRow }
+import ru.nh.{ RegisterUserCommand, User }
 
-import java.time.{Instant, LocalDate}
+import java.time.{ Instant, LocalDate }
 import java.util.UUID
 
 trait UserAccessor[F[_]] {

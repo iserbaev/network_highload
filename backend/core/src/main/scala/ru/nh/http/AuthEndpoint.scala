@@ -3,9 +3,9 @@ package ru.nh.http
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import org.typelevel.log4cats.{Logger, LoggerFactory}
+import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
-import ru.nh.auth.AuthService.{Token, UserPassword}
+import ru.nh.auth.AuthService.{ Token, UserPassword }
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody

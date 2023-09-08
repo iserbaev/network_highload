@@ -1,15 +1,15 @@
 package ru.nh.user.inmemory
 
-import cats.effect.{IO, Ref}
+import cats.effect.{ IO, Ref }
 import cats.syntax.all._
-import cats.{Functor, Reducible}
+import cats.{ Functor, Reducible }
 import ru.nh.user.UserAccessor
 import ru.nh.user.UserAccessor.UserRow
-import ru.nh.{RegisterUserCommand, User}
+import ru.nh.{ RegisterUserCommand, User }
 
 import java.util.UUID
 
-class InMemoryUserAccessor (
+class InMemoryUserAccessor(
     users: Ref[IO, Map[UUID, UserRow]],
     hobbies: Ref[IO, Map[UUID, List[String]]],
     friends: Ref[IO, Map[UUID, Set[UUID]]]

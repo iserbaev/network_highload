@@ -7,7 +7,7 @@ import java.util.UUID
 
 trait ConversationService {
 
-  def createConversation(participant: UUID, privateParticipant: Option[UUID]): IO[Conversation]
+  def createConversation(participant: UUID, privateParticipant: Option[UUID]): IO[UUID]
 
   def addParticipant(conversationId: UUID, participant: UUID): IO[Unit]
 

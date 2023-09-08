@@ -3,11 +3,10 @@ package ru.nh.user.http
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import org.typelevel.log4cats.{Logger, LoggerFactory}
-import ru.nh.UserService
+import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http._
-import ru.nh.{Id, UserService}
+import ru.nh.{ Id, UserService }
 import sttp.model.StatusCode
 
 import java.util.UUID

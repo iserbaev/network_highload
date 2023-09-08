@@ -1,16 +1,16 @@
 package ru.nh.user
 
 import cats.effect.std.Supervisor
-import cats.effect.{IO, Resource}
+import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import fs2.concurrent.Channel
-import org.typelevel.log4cats.{Logger, LoggerFactory}
-import ru.nh.{Post, PostService, RegisterUserCommand, User, UserService}
+import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import ru.nh.PostService.PostFeed
 import ru.nh.cache.EventManager
 import ru.nh.cache.EventManager.UserPosts
 import ru.nh.post.PostAccessor
 import ru.nh.post.PostAccessor.PostRow
-import ru.nh.PostService.PostFeed
+import ru.nh.{ Post, PostService, RegisterUserCommand, User, UserService }
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
