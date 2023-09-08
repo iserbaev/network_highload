@@ -49,7 +49,7 @@ object HttpModule {
     val log = L.getLoggerFromClass(classOf[HttpModule])
 
     val logic   = endpoints
-    val swagger = swaggerEndpoints(logic, title ++ "endpoints", "0.0.1")
+    val swagger = swaggerEndpoints(logic, title ++ " endpoints", "0.0.1")
 
     val serverInterpreter = Http4sServerInterpreter[IO] {
       Http4sServerOptions

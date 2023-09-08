@@ -35,8 +35,8 @@ class PostgresConversationAccessor extends ConversationAccessor[ConnectionIO] {
   def getPrivateConversation(firstPerson: UUID, participant: UUID): ConnectionIO[Option[ConversationRow]] =
     sql"""SELECT id, participant, private_conversation, private_conversation_participant, created_at
          |FROM conversation_log
-         |WHERE participant = $firstPerson
-         |  AND private_conversation_participant = $participant
+         |WHERE participant IN ($firstPerson, $participant)
+         |  AND private_conversation_participant IN ($firstPerson, $participant)
          """.stripMargin
       .query[ConversationRow]
       .option

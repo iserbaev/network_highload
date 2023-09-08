@@ -1,9 +1,11 @@
 package ru.nh.conversation.http
 
+import cats.data.NonEmptySet
 import cats.effect.IO
 import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
 import io.circe.{ Decoder, Encoder }
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import ru.nh.Message
 import ru.nh.auth.AuthService
 import ru.nh.conversation.http.ConversationEndpointDescriptions._
 import ru.nh.http._
@@ -47,10 +49,18 @@ object ConversationEndpointDescriptions {
     implicit val encoder: Encoder.AsObject[DialogMessageText] = deriveEncoder[DialogMessageText]
   }
 
-  final case class DialogMessage(from: UUID, to: UUID, text: String)
+  final case class DialogMessage(from: UUID, to: UUID, text: String, index: Int)
 
   object DialogMessage {
     implicit val decoder: Decoder[DialogMessage]          = deriveDecoder[DialogMessage]
     implicit val encoder: Encoder.AsObject[DialogMessage] = deriveEncoder[DialogMessage]
+
+    def apply(message: Message, participants: NonEmptySet[UUID]): DialogMessage =
+      new DialogMessage(
+        message.sender,
+        (participants - message.sender).head,
+        message.message,
+        message.conversationIndex
+      )
   }
 }

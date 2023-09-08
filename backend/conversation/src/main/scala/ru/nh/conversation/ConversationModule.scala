@@ -35,14 +35,9 @@ object ConversationModule {
             def addParticipant(conversationId: UUID, participant: UUID): IO[Unit] =
               c.addParticipant(conversationId, participant)
 
-            def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Conversation] =
+            def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Option[Conversation]] =
               c.getPrivateConversation(firstPerson, participant)
                 .map(_.map(_.toConversation))
-                .flatMap(
-                  IO.fromOption(_)(
-                    new NoSuchElementException(s"Conversation not found for ($firstPerson, $participant)")
-                  )
-                )
 
             def getConversations(participant: UUID, limit: Int): IO[Chain[Conversation]] =
               c.getConversations(participant, limit).map(_.map(_.toConversation))

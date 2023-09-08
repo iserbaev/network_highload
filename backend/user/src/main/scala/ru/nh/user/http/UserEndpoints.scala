@@ -22,10 +22,14 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
     .serverLogic { cmd =>
       userService
         .register(cmd)
-        .flatTap(u => authService.save(u.id.toString, cmd.password, appKey))
+        .flatTap{u =>
+          authService.save(u.id.toString, cmd.password, appKey)
+        }
         .attempt
         .map {
-          _.map(u => Id(u.id))
+          _.map { u =>
+            Id(u.id)
+          }
             .leftMap {
               case _: IllegalArgumentException =>
                 (StatusCode.BadRequest, none)

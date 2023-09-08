@@ -1,6 +1,6 @@
 package ru.nh.conversation.http
 
-import cats.data.NonEmptyList
+import cats.data.{ NonEmptyList, NonEmptySet }
 import cats.effect.IO
 import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
@@ -27,7 +27,13 @@ class ConversationEndpoints(
   val addDialog: SEndpoint = endpointDescriptions.addDialog
     .serverLogic { auth => params =>
       conversationService
-        .createConversation(UUID.fromString(auth.userId), params._1.some)
+        .getPrivateConversation(UUID.fromString(auth.userId), params._1)
+        .flatMap {
+          case Some(value) => value.id.pure[IO]
+          case None =>
+            conversationService
+              .createConversation(UUID.fromString(auth.userId), params._1.some)
+        }
         .flatMap(conversationId =>
           messageService
             .addMessage(UUID.fromString(auth.userId), conversationId, params._2.text)
@@ -47,14 +53,14 @@ class ConversationEndpoints(
     .serverLogic { auth => id =>
       conversationService
         .getPrivateConversation(UUID.fromString(auth.userId), id)
+        .flatMap(
+          IO.fromOption(_)(
+            new NoSuchElementException(s"Conversation not found for (${UUID.fromString(auth.userId)}, $id)")
+          )
+        )
         .flatMap(c => messageService.getMessages(c.id).tupleLeft(c))
-        .flatTap { case (conversation, messages) =>
-          IO.raiseWhen(messages.exists(_.sender != conversation.participant))(
-            new IllegalStateException(
-              s"Got messages with diff sender id [${messages.filter(_.sender != conversation.participant).toList}, ${conversation.participant}]"
-            )
-          ) *>
-            log.debug(s"Received private conversation for (${auth.userId}, $id}) [$conversation]")
+        .flatTap { case (conversation, _) =>
+          log.debug(s"Received private conversation for (${auth.userId}, $id}) [$conversation]")
         }
         .attempt
         .map {
@@ -62,7 +68,9 @@ class ConversationEndpoints(
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
           }.flatMap { case (_, messages) =>
-            messages.map(m => DialogMessage(m.sender, id, m.message)).toList.asRight
+            val participants = NonEmptySet.of(UUID.fromString(auth.userId), id)
+
+            messages.map(m => DialogMessage(m, participants)).toList.asRight
           }
         }
     }

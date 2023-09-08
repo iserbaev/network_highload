@@ -11,7 +11,7 @@ trait ConversationService {
 
   def addParticipant(conversationId: UUID, participant: UUID): IO[Unit]
 
-  def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Conversation]
+  def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Option[Conversation]]
 
   def getConversations(participant: UUID, limit: Int): IO[Chain[Conversation]]
 

@@ -20,7 +20,7 @@ class AuthClient(host: String, port: Int, client: Client[IO])(implicit logger: L
       uri = baseUrl / "auth" / "save" / key
     ).withEntity(UserPassword(login, password))
 
-    runRequest[String](request).void
+    runRequest(request)
   }
 
   def login(id: String, password: String): IO[Option[AuthService.Token]] = {
@@ -29,7 +29,7 @@ class AuthClient(host: String, port: Int, client: Client[IO])(implicit logger: L
       uri = baseUrl / "auth" / "login"
     ).withEntity(UserPassword(id, password))
 
-    runRequest[Token](request).map(_.some)
+    runQueryRequest[Token](request).map(_.some)
   }
 
   def authorize(token: String): IO[Option[AuthService.Auth]] = {
@@ -38,10 +38,27 @@ class AuthClient(host: String, port: Int, client: Client[IO])(implicit logger: L
       uri = baseUrl / "auth" / "authorize"
     ).withEntity(Token(token))
 
-    runRequest[Auth](request).map(_.some)
+    runQueryRequest[Auth](request).map(_.some)
   }
 
-  private def runRequest[Resp](request: Request[IO])(implicit decoder: Decoder[Resp]): IO[Resp] =
+  private def runRequest(request: Request[IO]): IO[Unit] =
+    client
+      .run(request)
+      .use { response =>
+        if (response.status.isSuccess)
+          logger
+            .info(
+              s"Outgoing HTTP request: status=${response.status.code} method=${request.method.name} uri=${request.uri}"
+            )
+        else {
+          logger
+            .error(
+              s"Outgoing HTTP request failed: status=${response.status.code} method=${request.method.name} uri=${request.uri}"
+            ) *> IO.raiseError(new Exception(s"Outgoing request failed with status=${response.status.code}"))
+        }
+      }
+
+  private def runQueryRequest[Resp](request: Request[IO])(implicit decoder: Decoder[Resp]): IO[Resp] =
     client
       .run(request)
       .use { response =>
