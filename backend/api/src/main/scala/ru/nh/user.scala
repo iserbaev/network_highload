@@ -1,4 +1,4 @@
-package ru.nh.user
+package ru.nh
 
 import java.time.LocalDate
 import java.util.UUID

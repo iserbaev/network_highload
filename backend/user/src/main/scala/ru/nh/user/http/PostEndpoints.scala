@@ -7,7 +7,7 @@ import io.circe.syntax._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http._
-import ru.nh.user.{ Id, PostService }
+import ru.nh.{ Id, PostService }
 import sttp.model.StatusCode
 
 import java.util.UUID

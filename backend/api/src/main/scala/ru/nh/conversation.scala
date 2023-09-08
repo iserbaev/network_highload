@@ -1,4 +1,4 @@
-package ru.nh.user
+package ru.nh
 
 import java.util.UUID
 

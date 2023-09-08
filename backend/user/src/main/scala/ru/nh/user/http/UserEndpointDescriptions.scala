@@ -5,7 +5,7 @@ import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http._
-import ru.nh.user.{ Id, RegisterUserCommand, User }
+import ru.nh.{ Id, RegisterUserCommand, User }
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody

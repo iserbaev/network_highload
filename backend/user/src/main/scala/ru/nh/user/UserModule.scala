@@ -5,6 +5,7 @@ import cats.effect.IO
 import cats.effect.kernel.Resource
 import cats.implicits.catsSyntaxTuple2Semigroupal
 import org.typelevel.log4cats.LoggerFactory
+import ru.nh.UserService
 import ru.nh.auth.AuthModule
 import ru.nh.db.PostgresModule
 import ru.nh.http.SEndpoint

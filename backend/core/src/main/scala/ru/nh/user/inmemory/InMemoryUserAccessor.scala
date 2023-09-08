@@ -1,10 +1,11 @@
 package ru.nh.user.inmemory
 
-import cats.effect.{ IO, Ref }
+import cats.effect.{IO, Ref}
 import cats.syntax.all._
-import cats.{ Functor, Reducible }
+import cats.{Functor, Reducible}
+import ru.nh.user.UserAccessor
 import ru.nh.user.UserAccessor.UserRow
-import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
+import ru.nh.{RegisterUserCommand, User}
 
 import java.util.UUID
 

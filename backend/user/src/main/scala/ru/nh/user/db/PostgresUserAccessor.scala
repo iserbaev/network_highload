@@ -8,8 +8,9 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import org.typelevel.log4cats.LoggerFactory
+import ru.nh.user.UserAccessor
 import ru.nh.user.UserAccessor.UserRow
-import ru.nh.user.{ RegisterUserCommand, User, UserAccessor }
+import ru.nh.{ RegisterUserCommand, User }
 
 import java.time.LocalDate
 import java.util.UUID

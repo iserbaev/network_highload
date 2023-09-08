@@ -1,4 +1,4 @@
-package ru.nh.user
+package ru.nh
 
 import cats.effect.IO
 

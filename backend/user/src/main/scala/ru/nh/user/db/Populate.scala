@@ -1,7 +1,7 @@
 package ru.nh.user.db
 
 import cats.effect.IO
-import ru.nh.user.RegisterUserCommand
+import ru.nh.RegisterUserCommand
 
 import scala.io.Source
 import scala.language.reflectiveCalls

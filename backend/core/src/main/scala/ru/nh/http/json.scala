@@ -2,8 +2,8 @@ package ru.nh.http
 
 import io.circe._
 import io.circe.generic.semiauto._
+import ru.nh.{Id, Post, RegisterUserCommand, User}
 import ru.nh.auth.AuthService.{ Token, UserPassword }
-import ru.nh.user.{ Id, Post, RegisterUserCommand, User }
 
 object json {
   object all extends UserJsonImplicits with CommonImplicits

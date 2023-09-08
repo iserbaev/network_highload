@@ -1,7 +1,7 @@
 package ru.nh.http
 
+import ru.nh.{Id, Post, RegisterUserCommand, User}
 import ru.nh.auth.AuthService.{Token, UserPassword}
-import ru.nh.user.{Id, Post, RegisterUserCommand, User}
 import sttp.tapir.Schema
 
 object tapirImplicits {

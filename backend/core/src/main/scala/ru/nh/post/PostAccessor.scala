@@ -2,8 +2,8 @@ package ru.nh.post
 
 import cats.data.{ Chain, OptionT }
 import cats.{ NonEmptyTraverse, ~> }
+import ru.nh.Post
 import ru.nh.post.PostAccessor.{ PostAccessorMapK, PostRow }
-import ru.nh.user.Post
 
 import java.time.Instant
 import java.util.UUID

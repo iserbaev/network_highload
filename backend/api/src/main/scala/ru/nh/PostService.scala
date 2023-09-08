@@ -1,8 +1,8 @@
-package ru.nh.user
+package ru.nh
 
 import cats.effect.{IO, Resource}
 import fs2.Stream
-import ru.nh.user.PostService.PostFeed
+import PostService.PostFeed
 
 import java.util.UUID
 
