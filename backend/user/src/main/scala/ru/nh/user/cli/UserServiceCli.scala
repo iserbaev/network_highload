@@ -8,7 +8,7 @@ import com.monovore.decline.effect.CommandIOApp
 import io.prometheus.client.CollectorRegistry
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
-import ru.nh.auth.AuthModule
+import ru.nh.auth.AuthService
 import ru.nh.config.ServerConfig
 import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
@@ -70,11 +70,11 @@ object UserCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthModule.inMemory.flatMap { auth => // TODO Add persistent Auth
+              AuthService.client.flatMap { auth =>
                 UserModule(pg, auth)
                   .flatMap(u =>
                     HttpModule
-                      .resource(config.http, u.endpoints, auth, m, "user endpoints")
+                      .resource(config.http, u.endpoints, m, "user")
                       .evalTap(_ => populateProgram(u.accessor))
                   )
               }

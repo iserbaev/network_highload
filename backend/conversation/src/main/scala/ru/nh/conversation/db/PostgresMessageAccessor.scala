@@ -7,8 +7,6 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import org.typelevel.log4cats.LoggerFactory
 import ru.nh.Message
-import ru.nh.conversation.ConversationAccessor
-import ru.nh.conversation.ConversationAccessor.ConversationRow
 import ru.nh.message.MessageAccessor
 
 import java.util.UUID

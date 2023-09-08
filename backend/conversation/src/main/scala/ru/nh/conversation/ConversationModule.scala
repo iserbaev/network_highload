@@ -4,12 +4,12 @@ import cats.data.{ Chain, NonEmptyList }
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import org.typelevel.log4cats.LoggerFactory
-import ru.nh.{ Conversation, ConversationService, Message, MessageService }
-import ru.nh.auth.AuthModule
+import ru.nh.auth.AuthService
 import ru.nh.conversation.db.{ PostgresConversationAccessor, PostgresMessageAccessor }
 import ru.nh.conversation.http.ConversationEndpoints
 import ru.nh.db.PostgresModule
 import ru.nh.http.SEndpoint
+import ru.nh.{ Conversation, ConversationService, Message, MessageService }
 
 import java.util.UUID
 
@@ -22,7 +22,7 @@ trait ConversationModule {
 }
 
 object ConversationModule {
-  def resource(postgresModule: PostgresModule, authModule: AuthModule)(
+  def resource(postgresModule: PostgresModule, authService: AuthService)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, ConversationModule] =
     (PostgresConversationAccessor.inIO(postgresModule.rw), PostgresMessageAccessor.inIO(postgresModule.rw)).mapN {
@@ -57,7 +57,7 @@ object ConversationModule {
           }
 
           def endpoints: NonEmptyList[SEndpoint] =
-            new ConversationEndpoints(authModule.service, service, messageService).all
+            new ConversationEndpoints(authService, service, messageService).all
         }
     }
 }

@@ -10,8 +10,8 @@ class InMemoryLoginAccessor private (ref: Ref[IO, Map[String, LoginRow]]) extend
       .flatMap(now => ref.update(_.updated(login, LoginRow(login, password, now))))
       .void
 
-  def get(id: String): IO[Option[LoginAccessor.LoginRow]] =
-    ref.get.map(_.get(id))
+  def get(login: String): IO[Option[LoginAccessor.LoginRow]] =
+    ref.get.map(_.get(login))
 }
 
 object InMemoryLoginAccessor {

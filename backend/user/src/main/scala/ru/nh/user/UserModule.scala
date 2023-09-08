@@ -6,7 +6,7 @@ import cats.effect.kernel.Resource
 import cats.implicits.catsSyntaxTuple2Semigroupal
 import org.typelevel.log4cats.LoggerFactory
 import ru.nh.UserService
-import ru.nh.auth.AuthModule
+import ru.nh.auth.AuthService
 import ru.nh.db.PostgresModule
 import ru.nh.http.SEndpoint
 import ru.nh.user.db.{ PostgresPostAccessor, PostgresUserAccessor }
@@ -22,7 +22,7 @@ trait UserModule {
 
 object UserModule {
 
-  def apply(postgresModule: PostgresModule, authModule: AuthModule)(
+  def apply(postgresModule: PostgresModule, authService: AuthService)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, UserModule] =
     (PostgresPostAccessor.inIO(postgresModule.rw), PostgresUserAccessor.inIO(postgresModule.rw))
@@ -34,7 +34,7 @@ object UserModule {
             val service: UserService = um
 
             val endpoints: NonEmptyList[SEndpoint] =
-              new UserEndpoints(authModule.service, um).all ::: new PostEndpoints(authModule.service, um).all
+              new UserEndpoints(authService, um).all ::: new PostEndpoints(authService, um).all
           }
         }
       }

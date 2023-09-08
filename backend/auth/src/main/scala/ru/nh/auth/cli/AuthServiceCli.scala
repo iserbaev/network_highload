@@ -1,4 +1,4 @@
-package ru.nh.conversation.cli
+package ru.nh.auth.cli
 
 import cats.effect.{ ExitCode, IO }
 import cats.implicits._
@@ -7,31 +7,30 @@ import com.monovore.decline.effect.CommandIOApp
 import io.prometheus.client.CollectorRegistry
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
-import ru.nh.auth.AuthService
+import ru.nh.auth.AuthModule
 import ru.nh.config.ServerConfig
-import ru.nh.conversation.ConversationModule
 import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
 import ru.nh.http.HttpModule
 import ru.nh.metrics.MetricsModule
 
-object ConversationServiceCli
+object AuthServiceCli
     extends CommandIOApp(
-      name = "conversation-service-cli",
-      header = "Conversation service CLI",
+      name = "auth-service-cli",
+      header = "Auth service CLI",
       helpFlag = true,
       version = BuildInfo.version,
     ) {
-  val main = ConversationCli.all
+  val main = AuthCli.all
 }
 
-object ConversationCli {
+object AuthCli {
   def program(migrate: Boolean, mock: Boolean): IO[ExitCode] =
     ServerConfig.load
       .flatMap { config =>
         implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
         implicit val logger: SelfAwareStructuredLogger[IO] =
-          loggerFactory.getLoggerFromClass(classOf[ConversationCli.type])
+          loggerFactory.getLoggerFromClass(classOf[AuthCli.type])
 
         val migrateOrValidate =
           IO.pure(migrate)
@@ -58,13 +57,9 @@ object ConversationCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthService.client.flatMap { auth =>
-                ConversationModule
-                  .resource(pg, auth)
-                  .flatMap(conversationModule =>
-                    HttpModule
-                      .resource(config.http, conversationModule.endpoints, m, "conversation")
-                  )
+              AuthModule.resource(pg).flatMap { auth =>
+                HttpModule
+                  .resource(config.http, auth.endpoints, m, "auth")
               }
 
             }
@@ -80,8 +75,8 @@ object ConversationCli {
   val mockModeOpt: Opts[Boolean] =
     Opts.flag("mock", s"Start server with in-memory DB", "mm").orFalse
 
-  val server = Command("server", "Start HTTP server simultaneously") {
-    (forceMigrateOpt, mockModeOpt).mapN((m, mock) => ConversationCli.program(m, mock))
+  val server = Command("server", "Start HTTP servers simultaneously") {
+    (forceMigrateOpt, mockModeOpt).mapN((m, mock) => AuthCli.program(m, mock))
   }
 
   val all = Opts.subcommands(server)

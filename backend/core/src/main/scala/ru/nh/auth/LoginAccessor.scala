@@ -8,7 +8,7 @@ import java.time.Instant
 trait LoginAccessor[F[_]] {
   def save(login: String, password: String): F[Unit]
 
-  def get(id: String): F[Option[LoginRow]]
+  def get(login: String): F[Option[LoginRow]]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): LoginAccessor[G] =
     new LoginAccessorMapK(this, read, write)
@@ -21,7 +21,7 @@ object LoginAccessor {
     def save(login: String, password: String): G[Unit] =
       write(underlying.save(login, password))
 
-    def get(id: String): G[Option[LoginRow]] =
-      read(underlying.get(id))
+    def get(login: String): G[Option[LoginRow]] =
+      read(underlying.get(login))
   }
 }

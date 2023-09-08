@@ -9,7 +9,6 @@ import org.http4s.netty.server.NettyServerBuilder
 import org.http4s.server.Server
 import org.http4s.server.defaults.{ IdleTimeout, ResponseTimeout }
 import org.typelevel.log4cats.LoggerFactory
-import ru.nh.auth.AuthModule
 import ru.nh.http.HttpModule.Config
 import ru.nh.metrics.MetricsModule
 import sttp.tapir.server.http4s.{ Http4sServerInterpreter, Http4sServerOptions }
@@ -42,19 +41,15 @@ object HttpModule {
   def resource(
       cfg: Config,
       endpoints: NonEmptyList[SEndpoint],
-      authModule: AuthModule,
       metricsModule: MetricsModule,
-      swaggerTitle: String
+      title: String
   )(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, HttpModule] = {
     val log = L.getLoggerFromClass(classOf[HttpModule])
 
-    val authEndpoints = new AuthEndpoint(authModule.service)
-
-    val logic =
-      authEndpoints.all ::: endpoints
-    val swagger = swaggerEndpoints(logic, swaggerTitle, "0.0.1")
+    val logic   = endpoints
+    val swagger = swaggerEndpoints(logic, title ++ "endpoints", "0.0.1")
 
     val serverInterpreter = Http4sServerInterpreter[IO] {
       Http4sServerOptions
@@ -79,7 +74,7 @@ object HttpModule {
       )
       .withHttpApp(serverRoutes.orNotFound)
       .resource
-      .evalTap(_ => log.info(s"Run http user server on ${cfg.server.host}:${cfg.server.port}"))
+      .evalTap(_ => log.info(s"Run http $title server on ${cfg.server.host}:${cfg.server.port}"))
       .map { srv =>
         new HttpModule {
           override def config: Config = cfg

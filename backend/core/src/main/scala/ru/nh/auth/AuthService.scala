@@ -71,4 +71,6 @@ object AuthService {
   def apply(loginAccessor: LoginAccessor[IO]): Resource[IO, AuthService] =
     Resource
       .pure(new AuthService(loginAccessor))
+
+  def client: Resource[IO, AuthService] = ???
 }
