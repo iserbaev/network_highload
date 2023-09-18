@@ -4,9 +4,9 @@ import java.time.Instant
 import java.util.UUID
 
 final case class Message(
-    sender: UUID,
     conversationId: UUID,
     conversationIndex: Int,
+    sender: UUID,
     message: String,
     createdAt: Instant
 )

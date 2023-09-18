@@ -5,7 +5,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS conversation_log__private_conversations__parti
 
 CREATE UNIQUE INDEX IF NOT EXISTS message_log__conversation__covering_idx ON message_log
     USING btree (conversation_id, conversation_index)
-    INCLUDE (sender, conversation_id, conversation_index, message, created_at);
+    INCLUDE (conversation_id, conversation_index, sender, message, created_at);
 
 
 

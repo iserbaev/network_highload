@@ -21,7 +21,7 @@ class PostgresMessageAccessor extends MessageAccessor[ConnectionIO] {
   }
 
   def getMessages(conversationId: UUID): ConnectionIO[Chain[Message]] =
-    sql"""SELECT sender, conversation_id, conversation_index, message, created_at
+    sql"""SELECT conversation_id, conversation_index, sender, message, created_at
          |FROM message_log
          |WHERE conversation_id = $conversationId
          """.stripMargin

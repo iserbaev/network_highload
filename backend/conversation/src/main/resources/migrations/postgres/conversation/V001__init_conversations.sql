@@ -4,6 +4,6 @@ CREATE TABLE IF NOT EXISTS conversation_log
     participant                      UUID                                  NOT NULL,
     private_conversation             BOOLEAN                               NOT NULL,
     private_conversation_participant UUID,
-    created_at                       timestamptz DEFAULT now()             NOT NULL,
+    created_at                       TIMESTAMPTZ DEFAULT now()             NOT NULL,
     PRIMARY KEY (id, participant)
 );
