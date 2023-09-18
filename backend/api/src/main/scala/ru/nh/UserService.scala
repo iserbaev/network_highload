@@ -13,5 +13,7 @@ trait UserService {
 
   def addFriend(userId: UUID, friendId: UUID): IO[Unit]
 
+  def getFriends(userId: UUID): IO[List[UUID]]
+
   def deleteFriend(userId: UUID, friendId: UUID): IO[Unit]
 }

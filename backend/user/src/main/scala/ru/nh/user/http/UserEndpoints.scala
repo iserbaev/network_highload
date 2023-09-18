@@ -86,6 +86,19 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
         }
     }
 
+  val getFriends: SEndpoint = userEndpointDescriptions.getFriends
+    .serverLogic { auth => id =>
+      userService
+        .getFriends(id)
+        .attempt
+        .map {
+          _.leftMap {
+            case _: IllegalArgumentException => (StatusCode.BadRequest, none)
+            case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
+          }.flatMap(_.asRight)
+        }
+    }
+
   val deleteFriend: SEndpoint = userEndpointDescriptions.deleteFriend
     .serverLogic { auth => id =>
       userService
@@ -106,6 +119,7 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
     getUserProfile,
     searchUserProfile,
     addFriend,
-    deleteFriend
+    deleteFriend,
+    getFriends
   )
 }

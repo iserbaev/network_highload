@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration scan="true">
+    <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <!-- Delaying shutdown hook allows events to be written on `sys.exit(1)`,
+             so we can disable flushing here for throughput -->
+        <immediateFlush>false</immediateFlush>
+        <encoder>
+            <pattern>%date{ISO8601} %-5level [%thread{15}:%logger{25}] - %message%n%ex{20}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <logger name="ru.nh" level="debug"/>
+
+    <root level="warn">
+        <appender-ref ref="CONSOLE_ASYNC"/>
+    </root>
+
+</configuration>

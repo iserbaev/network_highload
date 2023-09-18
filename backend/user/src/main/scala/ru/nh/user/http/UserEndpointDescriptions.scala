@@ -51,6 +51,12 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
           .description(StatusCode.Ok, "Пользователь успешно указал своего друга")
       )
 
+  val getFriends: SecuredEndpoint[UUID, List[UUID]] =
+    secured.get
+      .in("friend" / "get")
+      .in(path[UUID]("id"))
+      .out(jsonBody[List[UUID]])
+
   val deleteFriend: SecuredEndpoint[UUID, StatusCode] =
     secured.put
       .in("friend" / "delete")

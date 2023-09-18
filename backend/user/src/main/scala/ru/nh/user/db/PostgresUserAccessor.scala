@@ -133,9 +133,16 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   }
 
   def getFriends(userId: UUID): ConnectionIO[List[UUID]] =
-    sql"""SELECT friend_id
-         |FROM friends 
-         |WHERE user_id = $userId
+    sql"""(
+         |  SELECT friend_id
+         |  FROM friends
+         |  WHERE user_id = $userId
+         |)
+         |UNION
+         |(
+         |  SELECT user_id
+         |  FROM friends
+         |  WHERE friend_id = $userId)
          """.stripMargin
       .query[UUID]
       .to[List]

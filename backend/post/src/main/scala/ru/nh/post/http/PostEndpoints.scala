@@ -1,4 +1,4 @@
-package ru.nh.user.http
+package ru.nh.post.http
 
 import cats.data.NonEmptyList
 import cats.effect.IO
@@ -7,12 +7,13 @@ import io.circe.syntax._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http._
+import ru.nh.user.UserClient
 import ru.nh.{ Id, PostService }
 import sttp.model.StatusCode
 
 import java.util.UUID
 
-class PostEndpoints(authService: AuthService, postService: PostService)(
+class PostEndpoints(authService: AuthService, postService: PostService, userClient: UserClient)(
     implicit L: LoggerFactory[IO]
 ) {
   import ru.nh.http.json.all._
@@ -85,15 +86,21 @@ class PostEndpoints(authService: AuthService, postService: PostService)(
   val postFeed: SEndpoint = userEndpointDescriptions.postFeed
     .serverLogicSuccess { auth => offsetLimit =>
       log
-        .debug(s"Start http post feed for [${auth.userId}]")
-        .as {
-          fs2.Stream
-            .resource(postService.postFeed(UUID.fromString(auth.userId), offsetLimit._1, offsetLimit._2))
-            .flatMap(_.stream)
-            .map(_.asJson.toString())
-            .through(fs2.text.utf8.encode)
-            .onFinalizeCase(ec => log.debug(s"Finalized http post feed [${auth.userId}], $ec"))
+        .debug(s"Start http post feed for [${auth.userId}]") *>
+        auth.userIdUUID.flatMap { id =>
+          userClient
+            .getFriends(id, auth.token)
+            .map { friends =>
+              fs2.Stream
+                .resource(postService.postFeed(id, friends, offsetLimit._1, offsetLimit._2))
+                .flatMap(_.stream)
+                .map(_.asJson.toString())
+                .through(fs2.text.utf8.encode)
+                .onFinalizeCase(ec => log.debug(s"Finalized http post feed [${auth.userId}], $ec"))
+            }
+
         }
+
     }
 
   val all: NonEmptyList[SEndpoint] = NonEmptyList.of(

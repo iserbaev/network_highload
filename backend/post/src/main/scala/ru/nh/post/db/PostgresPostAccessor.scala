@@ -1,4 +1,4 @@
-package ru.nh.user.db
+package ru.nh.post.db
 
 import cats.NonEmptyTraverse
 import cats.data.{ Chain, OptionT }

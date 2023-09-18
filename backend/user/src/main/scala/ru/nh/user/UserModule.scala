@@ -3,14 +3,13 @@ package ru.nh.user
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.effect.kernel.Resource
-import cats.implicits.catsSyntaxTuple2Semigroupal
 import org.typelevel.log4cats.LoggerFactory
 import ru.nh.UserService
 import ru.nh.auth.AuthService
 import ru.nh.db.PostgresModule
 import ru.nh.http.SEndpoint
-import ru.nh.user.db.{ PostgresPostAccessor, PostgresUserAccessor }
-import ru.nh.user.http.{ PostEndpoints, UserEndpoints }
+import ru.nh.user.db.PostgresUserAccessor
+import ru.nh.user.http.UserEndpoints
 
 trait UserModule {
   def accessor: UserAccessor[IO]
@@ -25,16 +24,16 @@ object UserModule {
   def apply(postgresModule: PostgresModule, authService: AuthService, appKey: String)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, UserModule] =
-    (PostgresPostAccessor.inIO(postgresModule.rw), PostgresUserAccessor.inIO(postgresModule.rw))
-      .flatMapN { (postAcc, acc) =>
-        UserManager(acc, postAcc).map { um =>
+    PostgresUserAccessor
+      .inIO(postgresModule.rw)
+      .flatMap { acc =>
+        UserManager(acc).map { um =>
           new UserModule {
             val accessor: UserAccessor[IO] = acc
 
             val service: UserService = um
 
-            val endpoints: NonEmptyList[SEndpoint] =
-              new UserEndpoints(authService, um, appKey).all ::: new PostEndpoints(authService, um).all
+            val endpoints: NonEmptyList[SEndpoint] = new UserEndpoints(authService, um, appKey).all
           }
         }
       }

@@ -10,6 +10,6 @@ services:
     ports:
       - "8081:8081"
 
-#docker-compose -f dc-nh-user.yml up -d
+#docker-compose -f dc-nh-yc.yml up -d
 
 #host.docker.internal:5432

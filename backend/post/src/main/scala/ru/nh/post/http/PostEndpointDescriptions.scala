@@ -1,4 +1,4 @@
-package ru.nh.user.http
+package ru.nh.post.http
 
 import cats.effect.IO
 import io.circe.generic.semiauto.{ deriveDecoder, deriveEncoder }
@@ -20,10 +20,10 @@ class PostEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
   import ru.nh.http.json.all._
   import tapirImplicits._
 
-  val resource: String                  = "user"
+  val resource: String                  = "post"
   val resourcePath: EndpointInput[Unit] = resource
 
-  implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[UserEndpointDescriptions])
+  implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[PostEndpointDescriptions])
 
   implicit val postCreateSchema: Schema[PostCreate] = Schema.derived[PostCreate]
   implicit val postUpdateSchema: Schema[PostUpdate] = Schema.derived[PostUpdate]
@@ -32,31 +32,31 @@ class PostEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
 
   val addPost: SecuredEndpoint[PostCreate, Id] =
     secured.post
-      .in("post" / "create")
+      .in("create")
       .in(jsonBody[PostCreate])
       .out(jsonBody[Id])
 
   val updatePost: SecuredEndpoint[PostUpdate, StatusCode] =
     secured.put
-      .in("post" / "update")
+      .in("update")
       .in(jsonBody[PostUpdate])
       .out(statusCode.description(StatusCode.Ok, "Успешно изменен пост"))
 
   val deletePost: SecuredEndpoint[UUID, StatusCode] =
     secured.put
-      .in("post" / "delete")
+      .in("delete")
       .in(path[UUID]("id"))
       .out(statusCode.description(StatusCode.Ok, "Успешно удален пост"))
 
   val getPost: SecuredEndpoint[UUID, Post] =
     secured.get
-      .in("post" / "get")
+      .in("get")
       .in(path[UUID]("id"))
       .out(jsonBody[Post])
 
   val postFeed =
     secured.get
-      .in("post" / "feed")
+      .in("feed")
       .in(path[Int]("offset").and(path[Int]("limit")))
       .out(NoCacheControlHeader)
       .out(XAccelBufferingHeader)

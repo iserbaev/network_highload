@@ -1,4 +1,5 @@
 import DockerConfig.dockerSettings
+import com.typesafe.sbt.packager.MappingsHelper.directory
 import sbtrelease.*
 import sbtwelcome.*
 
@@ -107,7 +108,7 @@ lazy val core = Project(id = "core", base = file("core"))
   )
 
 lazy val auth = Project(id = "auth", base = file("auth"))
-  .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging)
   .dependsOn(api, core)
   .settings(
     commonSettings,
@@ -135,10 +136,17 @@ lazy val auth = Project(id = "auth", base = file("auth"))
     ),
     libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
     libraryDependencies ++= Dependencies.commonTest.value,
+    Compile / mainClass  := Some("ru.nh.auth.cli.AuthServiceCli"),
+    executableScriptName := "auth-service-cli",
+    dockerSettings("auth", 8088),
+    bashScriptExtraDefines ++= Seq(
+      """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
+    ),
   )
 
 lazy val conversation = Project(id = "conversation", base = file("conversation"))
-  .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging)
   .dependsOn(api, core)
   .settings(
     commonSettings,
@@ -166,10 +174,55 @@ lazy val conversation = Project(id = "conversation", base = file("conversation")
     ),
     libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
     libraryDependencies ++= Dependencies.commonTest.value,
+    Compile / mainClass  := Some("ru.nh.conversation.cli.ConversationServiceCli"),
+    executableScriptName := "conversation-service-cli",
+    dockerSettings("conversation", 8082),
+    bashScriptExtraDefines ++= Seq(
+      """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
+    ),
+  )
+
+lazy val post = Project(id = "post", base = file("post"))
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging)
+  .dependsOn(api, core)
+  .settings(
+    commonSettings,
+    buildInfoKeys := Seq[BuildInfoKey](
+      name,
+      version,
+      scalaVersion,
+      sbtVersion,
+      BuildInfoKey.map(git.gitCurrentBranch) { case (_, branch) =>
+        "gitBranch" -> branch
+      },
+      BuildInfoKey.map(git.gitHeadCommit) { case (_, sha) =>
+        "gitCommit" -> sha.orNull
+      }
+    ),
+    buildInfoPackage := "ru.nh.post.cli",
+    buildInfoOptions ++= Seq(
+      BuildInfoOption.BuildTime,
+      BuildInfoOption.ToJson
+    ),
+    Compile / run / fork := true,
+    Compile / run / javaOptions ++= Seq(
+      "-Dconfig.file=../src/universal/conf/application.conf",
+      "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
+    ),
+    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= Dependencies.commonTest.value,
+    Compile / mainClass  := Some("ru.nh.post.cli.PostServiceCli"),
+    executableScriptName := "post-service-cli",
+    dockerSettings("post", 8083),
+    bashScriptExtraDefines ++= Seq(
+      """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
+    ),
   )
 
 lazy val user = Project(id = "user", base = file("user"))
-  .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging)
   .dependsOn(api, core)
   .settings(
     commonSettings,
@@ -197,24 +250,26 @@ lazy val user = Project(id = "user", base = file("user"))
     ),
     libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
     libraryDependencies ++= Dependencies.commonTest.value,
-  )
-
-lazy val root = Project(id = "network-highload-all", base = file("."))
-  .enablePlugins(GitBranchPrompt, JavaAppPackaging)
-  .aggregate(api, core, auth, user, conversation)
-  .dependsOn(auth, user, conversation)
-  .settings(
-    Compile / mainClass := Some("ru.nh.user.cli.UserServiceCli"),
-    Compile / discoveredMainClasses ++= Seq("ru.nh.conversation.cli.ConversationServiceCli"),
-    Compile / discoveredMainClasses ++= Seq("ru.nh.auth.cli.AuthServiceCli"),
+    Compile / mainClass  := Some("ru.nh.user.cli.UserServiceCli"),
     executableScriptName := "user-service-cli",
+    dockerSettings("user", 8081),
     bashScriptExtraDefines ++= Seq(
       """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
     ),
-    publish      := {},
-    publishLocal := {},
-    dockerSettings,
+  )
+
+lazy val root = Project(id = "network-highload-all", base = file("."))
+  .enablePlugins(GitBranchPrompt, JavaAppPackaging)
+  .aggregate(api, core, auth, user, conversation, post)
+  .dependsOn(auth, user, conversation, post)
+  .settings(
+    Compile / discoveredMainClasses := Seq("ru.nh.user.cli.UserServiceCli"),
+    Compile / discoveredMainClasses ++= Seq("ru.nh.conversation.cli.ConversationServiceCli"),
+    Compile / discoveredMainClasses ++= Seq("ru.nh.post.cli.PostServiceCli"),
+    Compile / discoveredMainClasses ++= Seq("ru.nh.auth.cli.AuthServiceCli"),
+    publish        := {},
+    publishLocal   := {},
     publish / skip := true,
     logo           := customLogo,
     usefulTasks    := cliTasks,

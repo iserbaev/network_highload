@@ -1,4 +1,4 @@
-package ru.nh.conversation.cli
+package ru.nh.post.cli
 
 import cats.effect.{ ExitCode, IO }
 import cats.implicits._
@@ -9,61 +9,61 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
 import ru.nh.auth.AuthClient
 import ru.nh.config.ServerConfig
-import ru.nh.conversation.ConversationModule
 import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
 import ru.nh.http.HttpModule
 import ru.nh.metrics.MetricsModule
+import ru.nh.post.PostModule
 
-object ConversationServiceCli
+object PostServiceCli
     extends CommandIOApp(
-      name = "conversation-service-cli",
-      header = "Conversation service CLI",
+      name = "post-service-cli",
+      header = "Post service CLI",
       helpFlag = true,
       version = BuildInfo.version,
     ) {
-  val main = ConversationCli.all
+  val main = PostCli.all
 }
 
-object ConversationCli {
+object PostCli {
   def program(migrate: Boolean, mock: Boolean): IO[ExitCode] =
-    ServerConfig.load
-      .flatMap { config =>
+    (PostModule.loadClientsConfig, ServerConfig.load)
+      .flatMapN { (clientsConfig, serverConfig) =>
         implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
         implicit val logger: SelfAwareStructuredLogger[IO] =
-          loggerFactory.getLoggerFromClass(classOf[ConversationCli.type])
+          loggerFactory.getLoggerFromClass(classOf[PostCli.type])
 
         val migrateOrValidate =
           IO.pure(migrate)
             .ifM(
               ifTrue = FlywaySupport
                 .migrate(
-                  config.db.write.connection,
-                  config.db.migrations.locations,
-                  config.db.migrations.mixed,
-                  config.db.migrations.flywayTableName
+                  serverConfig.db.write.connection,
+                  serverConfig.db.migrations.locations,
+                  serverConfig.db.migrations.mixed,
+                  serverConfig.db.migrations.flywayTableName
                 )
                 .void,
               ifFalse = FlywaySupport
                 .validate(
-                  config.db.write.connection,
-                  config.db.migrations.locations,
-                  config.db.migrations.mixed,
-                  config.db.migrations.flywayTableName
+                  serverConfig.db.write.connection,
+                  serverConfig.db.migrations.locations,
+                  serverConfig.db.migrations.mixed,
+                  serverConfig.db.migrations.flywayTableName
                 )
             )
 
         val runProgram =
           MetricsModule
-            .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
-            .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
+            .prometheus(CollectorRegistry.defaultRegistry, serverConfig.metrics)
+            .flatMap(m => PostgresModule(serverConfig.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthClient.resource(config.auth.host, config.auth.port).flatMap { auth =>
-                ConversationModule
-                  .resource(pg, auth)
-                  .flatMap(conversationModule =>
+              AuthClient.resource(serverConfig.auth.host, serverConfig.auth.port).flatMap { auth =>
+                PostModule
+                  .resource(clientsConfig, pg, auth)
+                  .flatMap(postModule =>
                     HttpModule
-                      .resource(config.http, conversationModule.endpoints, m, "conversation")
+                      .resource(serverConfig.http, postModule.endpoints, m, "post")
                   )
               }
 
@@ -81,7 +81,7 @@ object ConversationCli {
     Opts.flag("mock", s"Start server with in-memory DB", "mm").orFalse
 
   val server = Command("server", "Start HTTP server simultaneously") {
-    (forceMigrateOpt, mockModeOpt).mapN((m, mock) => ConversationCli.program(m, mock))
+    (forceMigrateOpt, mockModeOpt).mapN((m, mock) => PostCli.program(m, mock))
   }
 
   val all = Opts.subcommands(server)

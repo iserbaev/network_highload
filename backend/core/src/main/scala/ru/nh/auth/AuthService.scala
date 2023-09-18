@@ -4,15 +4,12 @@ import cats.effect.IO
 import cats.effect.kernel.Resource
 import cats.syntax.all._
 import io.circe.parser.decode
-import org.http4s.blaze.client.BlazeClientBuilder
-import org.typelevel.log4cats.LoggerFactory
 import pdi.jwt._
 import pdi.jwt.algorithms.JwtHmacAlgorithm
 import ru.nh.auth.AuthService.{ Token, UserPassword }
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 import scala.util.Try
 
 trait AuthService {
@@ -21,7 +18,7 @@ trait AuthService {
 
   def authorize(token: String): IO[Option[AuthService.Auth]]
 }
-private[auth] class AuthServiceImpl(applicationKey: String, loginAccessor: LoginAccessor[IO]) extends AuthService {
+private[auth] class LiveAuthService(applicationKey: String, loginAccessor: LoginAccessor[IO]) extends AuthService {
   import ru.nh.http.json.all._
 
   private val algoKey: String        = "secretKey"
@@ -60,7 +57,12 @@ private[auth] class AuthServiceImpl(applicationKey: String, loginAccessor: Login
         _.flatMap { row =>
           Option.when(row.password == userPasswordFromToken.password)(
             AuthService
-              .Auth(UUID.randomUUID().toString, userPasswordFromToken.id, Set(AuthService.Role.User).mkString(","))
+              .Auth(
+                UUID.randomUUID().toString,
+                userPasswordFromToken.id,
+                Set(AuthService.Role.User).mkString(","),
+                token
+              )
           )
         }
       }
@@ -70,7 +72,9 @@ private[auth] class AuthServiceImpl(applicationKey: String, loginAccessor: Login
 object AuthService {
   final case class UserPassword(id: String, password: String)
   final case class Token(token: String)
-  final case class Auth(requestId: String, userId: String, roles: String)
+  final case class Auth(requestId: String, userId: String, roles: String, token: String) {
+    def userIdUUID: IO[UUID] = IO.fromTry(Try(UUID.fromString(userId)))
+  }
 
   final case class Role(roleId: String)
 
@@ -81,19 +85,5 @@ object AuthService {
 
   def apply(key: String, loginAccessor: LoginAccessor[IO]): Resource[IO, AuthService] =
     Resource
-      .pure(new AuthServiceImpl(key, loginAccessor))
-
-  def client(host: String, port: Int)(implicit L: LoggerFactory[IO]): Resource[IO, AuthService] = Resource.suspend {
-    L.fromClass(classOf[AuthClient]).map { implicit log =>
-      createClient.map(c => new AuthClient(host, port, c))
-    }
-  }
-
-  private def createClient =
-    BlazeClientBuilder[IO]
-      .withRequestTimeout(180.seconds)
-      .withResponseHeaderTimeout(170.seconds)
-      .withIdleTimeout(190.seconds)
-      .withMaxWaitQueueLimit(1024)
-      .resource
+      .pure(new LiveAuthService(key, loginAccessor))
 }

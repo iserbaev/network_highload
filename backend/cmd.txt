@@ -1,17 +1,18 @@
-sbt Universal/stage
-cd target/universal/stage
-bin/user-service-cli server --force-migrate
+sbt "project auth; Universal/stage; Docker/publishLocal"
+sbt "project user; Universal/stage; Docker/publishLocal"
+sbt "project conversation; Universal/stage; Docker/publishLocal"
+sbt "project post; Universal/stage; Docker/publishLocal"
 
-cd target/universal/stage
-bin/auth-service-cli server --force-migrate
+auth/target/universal/stage/bin/auth-service-cli server --force-migrate
 
-cd target/universal/stage
-bin/conversation-service-cli server --force-migrate
+user/target/universal/stage/bin/user-service-cli server --force-migrate
 
-sbt Docker/publishLocal
+conversation/target/universal/stage/bin/conversation-service-cli server --force-migrate
+
+post/target/universal/stage/bin/post-service-cli server --force-migrate
 
 
 curl -N --location  \
-  'http://localhost:8081/user/post/feed/1/2' \
+  'http://localhost:8083/post/feed/0/2' \
   -H 'accept: text/plain' \
-  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTAwNjUwNDcsImlhdCI6MTY5MjI4MDI4NywiaWQiOiJkYWI1ZTRhYy1lYWQxLTRiMjYtOWNlZi1lODA4OTY5ZjdhYmIiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.p_6bZ__mWA5cpTzohl-W56cuLPRms8IRCAPjXgN02Vw'
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTI4MjEzMjMsImlhdCI6MTY5NTAzNjU2MywiaWQiOiJmZjVjMDc1Mi0yMjk1LTQ3OWQtYTFjYi05MWQyMDNjMzQ3YTMiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.Y73lrZJmX5cTk1-o20XFWXdnJQ8PejIp7QU4asIzeMU'

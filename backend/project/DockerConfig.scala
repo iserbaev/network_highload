@@ -11,17 +11,16 @@ object DockerConfig {
   lazy val DockerGroup: String    = sys.env.getOrElse("PROJECT_GROUP", "v3c4w4q9")
   lazy val DockerProject: String  = sys.env.getOrElse("PROJECT_NAME", "nh-user")
 
-  lazy val dockerSettings: Seq[Def.Setting[_]] = Seq(
+  def dockerSettings(service: String, httpPort: Int): Seq[Def.Setting[_]] = Seq(
     // docker settings
     dockerBaseImage    := "eclipse-temurin:17.0.5_8-jre",
-    dockerExposedPorts := Seq(9090, 8080),
-    dockerCmd          := Seq("user-service-cli", "server"),
-    dockerEntrypoint   := Seq("/opt/docker/bin/entry-point.sh"),
+    dockerExposedPorts := Seq(httpPort),
+    dockerCmd          := Seq(s"$service-service-cli", "server"),
 
     // image label dockerRepository/dockerUsername/packageName:version
     dockerRepository     := Some(DockerRegistry),
     dockerUsername       := Some(DockerGroup),
-    Docker / packageName := DockerProject,
+    Docker / packageName := s"nh-$service",
     dockerAliases := {
       if ((ThisProject / isSnapshot).value) {
         Seq(
@@ -47,12 +46,5 @@ object DockerConfig {
         ) ++ dockerBuildOptions.value :+ "."
       } else dockerBuildCommand.value
     },
-
-    // gitlab-ci purposes
-    Universal / mappings += {
-      val file: File = new File((Compile / target).value, "VERSION")
-      IO.write(file, version.value)
-      file
-    } -> "VERSION"
   )
 }
