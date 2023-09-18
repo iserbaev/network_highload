@@ -2,9 +2,9 @@ package ru.nh.auth
 import cats.effect.IO
 import cats.syntax.all._
 import io.circe.Decoder
-import org.http4s.{ Method, Request, Uri }
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.client.Client
+import org.http4s.{ Method, Request, Uri }
 import org.typelevel.log4cats.Logger
 import ru.nh.auth.AuthService.{ Auth, Token, UserPassword }
 

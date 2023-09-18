@@ -6,8 +6,8 @@ import cats.syntax.all._
 import fs2.concurrent.Channel
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.PostService.PostFeed
-import ru.nh.cache.EventManager
-import ru.nh.cache.EventManager.UserPosts
+import ru.nh.events.EventManager
+import ru.nh.events.EventManager.UserPosts
 import ru.nh.post.PostAccessor
 import ru.nh.post.PostAccessor.PostRow
 import ru.nh.{ Post, PostService, RegisterUserCommand, User, UserService }
@@ -92,7 +92,7 @@ object UserManager {
           L.fromClass(classOf[UserManager])
             .flatTap(_.info(s"Allocating UserManager with ${accessor} store."))
         },
-      EventManager.userPosts(postAccessor, 5.seconds),
+      EventManager.userPosts(postAccessor, 5.seconds, 100),
       Supervisor[IO]
     )
       .mapN { (log, em, s) =>

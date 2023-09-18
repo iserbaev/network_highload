@@ -204,7 +204,7 @@ lazy val root = Project(id = "network-highload-all", base = file("."))
   .aggregate(api, core, auth, user, conversation)
   .dependsOn(auth, user, conversation)
   .settings(
-    Compile / mainClass  := Some("ru.nh.user.cli.UserServiceCli"),
+    Compile / mainClass := Some("ru.nh.user.cli.UserServiceCli"),
     Compile / discoveredMainClasses ++= Seq("ru.nh.conversation.cli.ConversationServiceCli"),
     Compile / discoveredMainClasses ++= Seq("ru.nh.auth.cli.AuthServiceCli"),
     executableScriptName := "user-service-cli",

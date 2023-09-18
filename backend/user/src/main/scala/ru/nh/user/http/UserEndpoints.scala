@@ -22,7 +22,7 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
     .serverLogic { cmd =>
       userService
         .register(cmd)
-        .flatTap{u =>
+        .flatTap { u =>
           authService.save(u.id.toString, cmd.password, appKey)
         }
         .attempt
