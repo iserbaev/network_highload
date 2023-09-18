@@ -1,8 +1,20 @@
 version: '3.5'
 
 services:
+  nh-auth:
+    image: public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-22fbd12b
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/auth"
+      NH_READ_POSTGRES_DB_USERNAME: "postgres"
+      NH_READ_POSTGRES_DB_PASSWORD: "xxx"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/auth"
+      NH_WRITE_POSTGRES_DB_USERNAME: "postgres"
+      NH_WRITE_POSTGRES_DB_PASSWORD: "xxx"
+    ports:
+      - "8088:8088"
+    command: [ "server", "--force-migrate"]
   nh-user:
-    image: public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT
+    image: public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-22fbd12b
     environment:
       NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/network_highload"
       NH_READ_POSTGRES_DB_USERNAME: "postgres"
@@ -10,8 +22,42 @@ services:
       NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/network_highload"
       NH_WRITE_POSTGRES_DB_USERNAME: "postgres"
       NH_WRITE_POSTGRES_DB_PASSWORD: "xxx"
+      NH_AUTH_HOST: "172.31.36.147"
     ports:
       - "8081:8081"
-    command: [ "user-service-cli", "server", "--force-migrate"]
+    command: [ "server", "--force-migrate"]
+  nh-conversation:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-22fbd12b
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/conversation"
+      NH_READ_POSTGRES_DB_USERNAME: "postgres"
+      NH_READ_POSTGRES_DB_PASSWORD: "xxx"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/conversation"
+      NH_WRITE_POSTGRES_DB_USERNAME: "postgres"
+      NH_WRITE_POSTGRES_DB_PASSWORD: "xxx"
+      NH_AUTH_HOST: "172.31.36.147"
+    ports:
+      - "8082:8082"
+    command: [ "server", "--force-migrate"]
+  nh-post:
+    image: public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-22fbd12b
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/post"
+      NH_READ_POSTGRES_DB_USERNAME: "postgres"
+      NH_READ_POSTGRES_DB_PASSWORD: "xxx"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/post"
+      NH_WRITE_POSTGRES_DB_USERNAME: "postgres"
+      NH_WRITE_POSTGRES_DB_PASSWORD: "xxx"
+      NH_AUTH_HOST: "172.31.36.147"
+      NH_USER_HOST: "172.31.39.85"
+    ports:
+      - "8083:8083"
+    command: [ "server", "--force-migrate"]
 
 #docker-compose -f dc-nh-aws.yml up -d
+
+# http://ec2-3-79-25-101.eu-central-1.compute.amazonaws.com:8088/docz/
+# http://ec2-3-122-228-157.eu-central-1.compute.amazonaws.com:8081/docz/
+# http://ec2-3-124-217-147.eu-central-1.compute.amazonaws.com:8082/docz/
+# http://ec2-18-185-118-81.eu-central-1.compute.amazonaws.com:8083/docz/
+

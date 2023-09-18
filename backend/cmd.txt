@@ -15,4 +15,10 @@ post/target/universal/stage/bin/post-service-cli server --force-migrate
 curl -N --location  \
   'http://localhost:8083/post/feed/0/2' \
   -H 'accept: text/plain' \
-  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTI4MjEzMjMsImlhdCI6MTY5NTAzNjU2MywiaWQiOiJmZjVjMDc1Mi0yMjk1LTQ3OWQtYTFjYi05MWQyMDNjMzQ3YTMiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.Y73lrZJmX5cTk1-o20XFWXdnJQ8PejIp7QU4asIzeMU'
+  -H 'Authorization: Bearer token'
+
+
+docker push public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-22fbd12b
+docker push public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-22fbd12b
+docker push public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-22fbd12b
+docker push public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-22fbd12b
