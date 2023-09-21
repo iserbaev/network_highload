@@ -14,6 +14,8 @@ import ru.nh.post.db.PostgresPostAccessor
 import ru.nh.post.http.PostEndpoints
 import ru.nh.user.UserClient
 
+import scala.concurrent.duration.DurationInt
+
 trait PostModule {
   def service: PostService
 
@@ -42,7 +44,7 @@ object PostModule {
 
             val service: PostService = um
 
-            val endpoints: NonEmptyList[SEndpoint] = new PostEndpoints(authService, um, userClient).all
+            val endpoints: NonEmptyList[SEndpoint] = new PostEndpoints(authService, um, userClient, 20.seconds).all
           }
         }
       }

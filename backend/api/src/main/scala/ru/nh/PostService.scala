@@ -17,6 +17,8 @@ trait PostService {
   def deletePost(postId: UUID): IO[Unit]
 
   def postFeed(userId: UUID, friends: List[UUID], offset: Int, limit: Int): Resource[IO, PostFeed]
+
+  def postFeedPosted(userId: UUID, friends: List[UUID]): Resource[IO, PostFeed]
 }
 
 object PostService {

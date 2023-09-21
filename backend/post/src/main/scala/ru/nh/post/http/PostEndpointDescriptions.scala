@@ -7,12 +7,11 @@ import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http._
 import ru.nh.{ Id, Post }
-import sttp.capabilities.fs2.Fs2Streams
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
+import sttp.tapir.server.http4s.serverSentEventsBody
 
-import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class PostEndpointDescriptions(val authService: AuthService)(implicit L: LoggerFactory[IO]) {
@@ -60,7 +59,14 @@ class PostEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in(path[Int]("offset").and(path[Int]("limit")))
       .out(NoCacheControlHeader)
       .out(XAccelBufferingHeader)
-      .out(streamTextBody(Fs2Streams[IO])(CodecFormat.TextPlain(), Some(StandardCharsets.UTF_8)))
+      .out(serverSentEventsBody[IO])
+
+  val postFeedPosted =
+    secured.get
+      .in("feed" / "posted")
+      .out(NoCacheControlHeader)
+      .out(XAccelBufferingHeader)
+      .out(serverSentEventsBody[IO])
 
 }
 

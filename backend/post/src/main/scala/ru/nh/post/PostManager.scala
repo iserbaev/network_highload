@@ -34,7 +34,10 @@ class PostManager(
   def deletePost(postId: UUID): IO[Unit] =
     postAccessor.deletePost(postId)
 
-  def postFeed(userId: UUID, friends: List[UUID], offset: Int, limit: Int): Resource[IO, PostFeed] = Resource.suspend {
+  def postFeed(userId: UUID, friends: List[UUID], offset: Int, limit: Int): Resource[IO, PostFeed] =
+    postFeedPosted(userId, friends).map(pf => pf.copy(stream = pf.stream.drop(offset.toLong).take(limit.toLong)))
+
+  def postFeedPosted(userId: UUID, friends: List[UUID]): Resource[IO, PostFeed] = Resource.suspend {
     Channel.unbounded[IO, PostRow].map { posts =>
       val logic =
         fs2.Stream
@@ -58,7 +61,7 @@ class PostManager(
             logicFiber.cancel.attempt *>
             log.debug(s"Finalized post feed [$userId]: $ec.")
         }
-        .as(PostFeed(posts.stream.drop(offset.toLong).take(limit.toLong).map(_.toPost)))
+        .as(PostFeed(posts.stream.map(_.toPost)))
     }
   }
 }

@@ -3,7 +3,6 @@ package ru.nh.post.http
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import io.circe.syntax._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
 import ru.nh.http._
@@ -12,10 +11,16 @@ import ru.nh.{ Id, PostService }
 import sttp.model.StatusCode
 
 import java.util.UUID
+import scala.concurrent.duration.FiniteDuration
 
-class PostEndpoints(authService: AuthService, postService: PostService, userClient: UserClient)(
+class PostEndpoints(
+    authService: AuthService,
+    postService: PostService,
+    userClient: UserClient,
+    val sseHeartbeatPeriod: FiniteDuration
+)(
     implicit L: LoggerFactory[IO]
-) {
+) extends SseSupport {
   import ru.nh.http.json.all._
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[PostEndpoints])
@@ -94,9 +99,27 @@ class PostEndpoints(authService: AuthService, postService: PostService, userClie
               fs2.Stream
                 .resource(postService.postFeed(id, friends, offsetLimit._1, offsetLimit._2))
                 .flatMap(_.stream)
-                .map(_.asJson.toString())
-                .through(fs2.text.utf8.encode)
+                .through(ssePipe)
                 .onFinalizeCase(ec => log.debug(s"Finalized http post feed [${auth.userId}], $ec"))
+            }
+
+        }
+
+    }
+
+  val postFeedPosted: SEndpoint = userEndpointDescriptions.postFeedPosted
+    .serverLogicSuccess { auth => _ =>
+      log
+        .debug(s"Start http post feed for [${auth.userId}]") *>
+        auth.userIdUUID.flatMap { id =>
+          userClient
+            .getFriends(id, auth.token)
+            .map { friends =>
+              fs2.Stream
+                .resource(postService.postFeedPosted(id, friends))
+                .flatMap(_.stream)
+                .through(ssePipe)
+                .onFinalizeCase(ec => log.debug(s"Finalized http post feed posted [${auth.userId}], $ec"))
             }
 
         }
@@ -108,6 +131,7 @@ class PostEndpoints(authService: AuthService, postService: PostService, userClie
     updatePost,
     deletePost,
     getPost,
-    postFeed
+    postFeed,
+    postFeedPosted
   )
 }
