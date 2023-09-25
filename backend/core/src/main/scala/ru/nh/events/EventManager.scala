@@ -66,8 +66,12 @@ abstract class EventManager[K, From, E] {
           .eval(buffer.snapshot)
           .flatMap { snapshot =>
             NonEmptyChain.fromSeq(snapshot.toSeq).traverse_ { kvSequence =>
-              streamUpdatesFromEventLog(kvSequence.map(_._1), getPivot(kvSequence.map(_._2)), limit)
-                .through(buffer.sink(resendUpdates))
+              val pivot = getPivot(kvSequence.map(_._2))
+
+              Stream.iterable(kvSequence.map(_._1).grouped(limit).toSeq).flatMap { batchedKeys =>
+                streamUpdatesFromEventLog(batchedKeys, pivot, limit)
+                  .through(buffer.sink(resendUpdates))
+              }
             }
           }
       )
