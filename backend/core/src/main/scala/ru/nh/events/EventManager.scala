@@ -63,13 +63,13 @@ abstract class EventManager[K, From, E] {
       .awakeEvery[IO](tickInterval)
       .flatMap(_ =>
         Stream
-          .eval(buffer.snapshot)
-          .flatMap { snapshot =>
-            NonEmptyChain.fromSeq(snapshot.toSeq).traverse_ { kvSequence =>
-              val pivot = getPivot(kvSequence.map(_._2))
+          .eval(buffer.subscriptions)
+          .flatMap { subscriptions =>
+            NonEmptyChain.fromSeq(subscriptions).traverse_ { nec =>
+              val pivot = getPivot(nec)
 
-              Stream.iterable(kvSequence.map(_._1).grouped(limit).toSeq).flatMap { batchedKeys =>
-                streamUpdatesFromEventLog(batchedKeys, pivot, limit)
+              Stream.iterable(nec.grouped(limit).toSeq).flatMap { batch =>
+                streamUpdatesFromEventLog(batch.map(_.key), pivot, limit)
                   .through(buffer.sink(resendUpdates))
               }
             }

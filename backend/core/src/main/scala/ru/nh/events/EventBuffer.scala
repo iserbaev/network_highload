@@ -33,7 +33,7 @@ import java.time.Instant
   */
 class EventBuffer[K: Show, E] private[events] (val state: State[K, E])(implicit log: Logger[IO]) {
 
-  def snapshot: IO[Map[K, Subscription[K, E]]] = state.get
+  def subscriptions: IO[List[Subscription[K, E]]] = state.get.map(_.values.toList)
 
   def sink(resendUpdates: Boolean): Pipe[IO, TopicEvent[K, E], Unit] =
     _.evalMap(updateState(_, resendUpdates))
