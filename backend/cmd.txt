@@ -18,7 +18,13 @@ curl -N --location  \
   -H 'Authorization: Bearer token'
 
 
-docker push public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-22fbd12b
-docker push public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-22fbd12b
-docker push public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-22fbd12b
-docker push public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-22fbd12b
+docker push public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-d7071b52
+docker push public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-d7071b52
+docker push public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-d7071b52
+docker push public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-d7071b52
+
+
+curl -N -X 'GET' \
+  'http://localhost:8083/post/feed/posted' \
+  -H 'accept: text/event-stream'  \
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTMxMDI4MjAsImlhdCI6MTY5NTMxODA2MCwiaWQiOiJhMTM3NTM0ZC01ZjM2LTQzNDItYWQ5OC1iYWU3ZTZhYThmYTkiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.uyEN7Ouamp6tif2J7l1yxMxvTpoCrBQgH9RMv7FV6qk'
