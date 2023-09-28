@@ -57,11 +57,12 @@ class ClientsSupport(client: Client[IO])(implicit logger: Logger[IO]) {
 }
 
 object ClientsSupport {
-  def createClient: Resource[IO, Client[IO]] =
+  def createClient(implicit log: Logger[IO]): Resource[IO, ClientsSupport] =
     BlazeClientBuilder[IO]
       .withRequestTimeout(180.seconds)
       .withResponseHeaderTimeout(170.seconds)
       .withIdleTimeout(190.seconds)
       .withMaxWaitQueueLimit(1024)
       .resource
+      .map(new ClientsSupport(_))
 }

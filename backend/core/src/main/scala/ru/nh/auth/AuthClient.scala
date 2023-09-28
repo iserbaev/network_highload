@@ -3,19 +3,16 @@ package ru.nh.auth
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
 import org.http4s.circe.CirceEntityCodec._
-import org.http4s.client.Client
 import org.http4s.{ Method, Request, Uri }
-import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import org.typelevel.log4cats.LoggerFactory
 import ru.nh.auth.AuthService.{ Auth, Token, UserPassword }
 import ru.nh.http.ClientsSupport
 
-class AuthClient(host: String, port: Int, client: Client[IO])(implicit logger: Logger[IO]) extends AuthService {
+class AuthClient(host: String, port: Int, clientsSupport: ClientsSupport) extends AuthService {
   import ru.nh.http.json.all._
 
   private val baseUrl =
     Uri(Uri.Scheme.http.some, Uri.Authority(host = Uri.RegName(host), port = port.some).some)
-
-  private val clientsSupport = new ClientsSupport(client)
 
   def save(login: String, password: String, key: String): IO[Unit] = {
     val request = Request[IO](

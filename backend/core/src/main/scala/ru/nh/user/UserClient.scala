@@ -2,19 +2,16 @@ package ru.nh.user
 
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
-import org.http4s.client.Client
 import org.http4s.{ Method, Request, Uri }
-import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import org.typelevel.log4cats.LoggerFactory
 import ru.nh.http.ClientsSupport
 
 import java.util.UUID
 
-class UserClient(host: String, port: Int, client: Client[IO])(implicit logger: Logger[IO]) {
+class UserClient(host: String, port: Int, clientsSupport: ClientsSupport) {
 
   private val baseUrl =
     Uri(Uri.Scheme.http.some, Uri.Authority(host = Uri.RegName(host), port = port.some).some)
-
-  private val clientsSupport = new ClientsSupport(client)
 
   def getFriends(userId: UUID, token: String): IO[List[UUID]] = {
     val request = Request[IO](
