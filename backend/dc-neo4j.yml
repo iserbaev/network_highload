@@ -1,0 +1,19 @@
+version: '3.5'
+
+services:
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+
+#docker-compose -p nh -f dc-neo4j.yml up -d
+
+#host.docker.internal:7687
+#http://localhost:7474
+#bolt://localhost:7687

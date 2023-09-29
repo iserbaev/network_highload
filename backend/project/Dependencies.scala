@@ -39,6 +39,8 @@ object Dependencies {
     val Log4Cats           = "2.6.0"
     val Logback            = "1.4.8"
     val Netty              = "4.1.93.Final"
+    val Neo4jDriver        = "5.12.0"
+    val Neotypes           = "0.23.3"
     val Newtypes           = "0.2.3"
     val Prometheus         = "0.16.0"
     val ProtobufJava       = "3.23.3"
@@ -183,6 +185,14 @@ object Dependencies {
     val magnolia = Seq("com.softwaremill.magnolia1_2" %% "magnolia" % Versions.Magnolia)
 
     val nettyTransport = Seq("io.netty" % "netty-transport" % Versions.Netty)
+
+    val neo4jDriver = Seq("org.neo4j.driver" % "neo4j-java-driver" % Versions.Neo4jDriver)
+    val neotypes = Seq(
+      "io.github.neotypes" %% "neotypes-core"        % Versions.Neotypes,
+      "io.github.neotypes" %% "neotypes-generic"     % Versions.Neotypes,
+      "io.github.neotypes" %% "neotypes-cats-effect" % Versions.Neotypes,
+      "io.github.neotypes" %% "neotypes-fs2-stream"  % Versions.Neotypes
+    )
 
     val newtypes = Seq("io.monix" %% "newtypes-core" % Versions.Newtypes)
 
@@ -339,6 +349,8 @@ object Dependencies {
   )
 
   val metrics = Def.setting(prometheus)
+
+  val neo4jClient = Def.setting(neo4jDriver ++ neotypes)
 
   val http = Def.setting(
     http4sCore ++ http4sCirce ++ http4sDsl ++ http4sServer ++ http4sBlazeClient ++

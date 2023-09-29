@@ -3,10 +3,10 @@ package ru.nh.user.http
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
-import org.typelevel.log4cats.{ Logger, LoggerFactory }
+import org.typelevel.log4cats.{Logger, LoggerFactory}
 import ru.nh.auth.AuthService
 import ru.nh.http._
-import ru.nh.{ Id, UserService }
+import ru.nh.{Friends, Id, UserService}
 import sttp.model.StatusCode
 
 import java.util.UUID
@@ -74,7 +74,7 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
   val addFriend: SEndpoint = userEndpointDescriptions.addFriend
     .serverLogic { auth => id =>
       userService
-        .addFriend(UUID.fromString(auth.userId), id)
+        .addFriends(Friends(UUID.fromString(auth.userId), id))
         .attempt
         .map {
           _.leftMap {
@@ -95,14 +95,14 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
           _.leftMap {
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
-          }.flatMap(_.asRight)
+          }.flatMap(_.map(_.friendId).asRight)
         }
     }
 
   val deleteFriend: SEndpoint = userEndpointDescriptions.deleteFriend
     .serverLogic { auth => id =>
       userService
-        .deleteFriend(UUID.fromString(auth.userId), id)
+        .deleteFriend(Friends(UUID.fromString(auth.userId), id))
         .attempt
         .map {
           _.leftMap {

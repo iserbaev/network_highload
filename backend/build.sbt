@@ -103,7 +103,7 @@ lazy val core = Project(id = "core", base = file("core"))
   .dependsOn(api)
   .settings(
     commonSettings,
-    libraryDependencies ++= (Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= (Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value ++ Dependencies.neo4jClient.value),
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 
@@ -248,7 +248,7 @@ lazy val user = Project(id = "user", base = file("user"))
       "-Dconfig.file=../src/universal/conf/application.conf",
       "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
     ),
-    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value ++ Dependencies.neo4jClient.value),
     libraryDependencies ++= Dependencies.commonTest.value,
     Compile / mainClass  := Some("ru.nh.user.cli.UserServiceCli"),
     executableScriptName := "user-service-cli",

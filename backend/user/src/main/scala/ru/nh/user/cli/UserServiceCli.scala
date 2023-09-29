@@ -1,7 +1,7 @@
 package ru.nh.user.cli
 
 import cats.data.NonEmptyChain
-import cats.effect.{ ExitCode, IO }
+import cats.effect.{ ExitCode, IO, Resource }
 import cats.implicits._
 import com.monovore.decline._
 import com.monovore.decline.effect.CommandIOApp
@@ -14,7 +14,7 @@ import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
 import ru.nh.http.HttpModule
 import ru.nh.metrics.MetricsModule
-import ru.nh.user.db.Populate
+import ru.nh.user.db.{ Neo4JModule, Populate }
 import ru.nh.user.{ UserAccessor, UserModule }
 
 object UserServiceCli
@@ -29,8 +29,8 @@ object UserServiceCli
 
 object UserCli {
   def program(migrate: Boolean, mock: Boolean, populate: Boolean): IO[ExitCode] =
-    ServerConfig.load
-      .flatMap { config =>
+    (ServerConfig.load, Neo4JModule.Config.load)
+      .flatMapN { (config, neo4jConfig) =>
         implicit val loggerFactory: LoggerFactory[IO]      = Slf4jFactory.create[IO]
         implicit val logger: SelfAwareStructuredLogger[IO] = loggerFactory.getLoggerFromClass(classOf[UserCli.type])
 
@@ -66,20 +66,15 @@ object UserCli {
             .whenA(populate)
 
         val runProgram =
-          MetricsModule
-            .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
-            .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
-            .flatMap { case (m, pg) =>
-              AuthClient.resource(config.auth.host, config.auth.port).flatMap { auth =>
-                UserModule(pg, auth, config.auth.key)
-                  .flatMap(u =>
-                    HttpModule
-                      .resource(config.http, u.endpoints, m, "user")
-                      .evalTap(_ => populateProgram(u.accessor))
-                  )
-              }
-
-            }
+          for {
+            m <- MetricsModule.prometheus(CollectorRegistry.defaultRegistry, config.metrics)
+            p <- PostgresModule(config.db, m.metricsFactory)
+            a <- AuthClient.resource(config.auth.host, config.auth.port)
+            n <- Neo4JModule(neo4jConfig)
+            u <- UserModule(p, n, a, config.auth.key)
+            _ <- HttpModule.resource(config.http, u.endpoints, m, "user")
+            _ <- Resource.eval(populateProgram(u.accessor))
+          } yield ()
 
         migrateOrValidate.unlessA(mock) *> runProgram.useForever
 

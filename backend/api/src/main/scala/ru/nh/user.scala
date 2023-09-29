@@ -15,6 +15,8 @@ final case class User(
     hobbies: List[String]
 )
 
+final case class Friends(userId: UUID, friendId: UUID)
+
 final case class RegisterUserCommand(
     name: String,
     surname: String,

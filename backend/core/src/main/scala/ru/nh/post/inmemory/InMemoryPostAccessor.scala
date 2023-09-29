@@ -7,13 +7,13 @@ import cats.effect.{ IO, Ref }
 import cats.syntax.all._
 import ru.nh.post.PostAccessor
 import ru.nh.post.PostAccessor.PostRow
-import ru.nh.user.UserAccessor
+import ru.nh.user.FriendsAccessor
 
 import java.util.UUID
 import scala.collection.SortedSet
 
 class InMemoryPostAccessor(
-    userAccessor: UserAccessor[IO],
+    friendsAccessor: FriendsAccessor[IO],
     posts: Ref[IO, Map[UUID, PostRow]],
     userPostIds: Ref[IO, Map[UUID, Set[UUID]]],
     counter: Ref[IO, Long]
@@ -43,11 +43,11 @@ class InMemoryPostAccessor(
       posts.update(_.removed(postId))
 
   def postFeed(userId: UUID, offset: Int, limit: Int): IO[Chain[PostRow]] =
-    (userPostIds.get, posts.get, userAccessor.getFriends(userId)).mapN {
+    (userPostIds.get, posts.get, friendsAccessor.getFriends(userId)).mapN {
       (userPostsSnapshot, postsSnapshot, friendsIds) =>
-        val postFeed = friendsIds.foldLeft(SortedSet.empty[PostRow]) { case (acc, friendId) =>
+        val postFeed = friendsIds.foldLeft(SortedSet.empty[PostRow]) { case (acc, friend) =>
           val friendPosts: Set[PostRow] =
-            userPostsSnapshot.getOrElse(friendId, Set.empty[UUID]).flatMap(postsSnapshot.get)
+            userPostsSnapshot.getOrElse(friend.friendId, Set.empty[UUID]).flatMap(postsSnapshot.get)
 
           acc ++ friendPosts
         }
