@@ -1,10 +1,10 @@
 package ru.nh.user.db
 
 import cats.effect.{ IO, Resource }
+import cats.syntax.all._
 import neotypes.cats.effect.implicits._
 import neotypes.{ Driver, GraphDatabase }
 import org.neo4j.driver.AuthTokens
-import cats.syntax.all._
 class Neo4JModule(val driver: Driver[IO])
 
 object Neo4JModule {
