@@ -7,7 +7,7 @@ import neotypes.implicits.syntax.string._
 import ru.nh.Friends
 import ru.nh.user.FriendsAccessor
 
-import java.util.UUID // Provides the query[T] extension method. // Provides the query[T] extension method.
+import java.util.UUID
 class Neo4jFriendsAccessor(driver: Driver[IO]) extends FriendsAccessor[IO] {
 
   def addFriends(f: Friends): IO[Unit] = driver.transact { tx =>

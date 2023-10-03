@@ -110,7 +110,7 @@ class PostEndpoints(
   val postFeedPosted: SEndpoint = userEndpointDescriptions.postFeedPosted
     .serverLogicSuccess { auth => _ =>
       log
-        .debug(s"Start http post feed for [${auth.userId}]") *>
+        .debug(s"Start http post feed posted for [${auth.userId}]") *>
         auth.userIdUUID.flatMap { id =>
           userClient
             .getFriends(id, auth.token)
