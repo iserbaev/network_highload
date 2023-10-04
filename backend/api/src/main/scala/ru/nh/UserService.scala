@@ -9,7 +9,7 @@ trait UserService {
 
   def get(id: UUID): IO[Option[User]]
 
-  def search(firstNamePrefix: String, lastNamePrefix: String): IO[Option[User]]
+  def search(firstNamePrefix: String, lastNamePrefix: String): IO[List[User]]
 
   def addFriends(f: Friends): IO[Unit]
 

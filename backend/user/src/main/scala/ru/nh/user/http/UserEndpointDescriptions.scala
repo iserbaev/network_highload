@@ -36,11 +36,11 @@ class UserEndpointDescriptions(val authService: AuthService)(implicit L: LoggerF
       .in(path[UUID]("id"))
       .out(jsonBody[User])
 
-  val searchUserProfile: SecuredEndpoint[(String, String), User] =
+  val searchUserProfile: SecuredEndpoint[(String, String), List[User]] =
     secured.get
       .in("search")
       .in(query[String]("first_name").and(query[String]("last_name")))
-      .out(jsonBody[User])
+      .out(jsonBody[List[User]])
 
   val addFriend: SecuredEndpoint[UUID, StatusCode] =
     secured.put

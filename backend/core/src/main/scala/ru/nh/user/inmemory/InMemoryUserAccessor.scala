@@ -32,10 +32,12 @@ class InMemoryUserAccessor(
   def getHobbies(userId: UUID): IO[List[String]] =
     hobbies.get.map(_.getOrElse(userId, List.empty))
 
-  def search(firstNamePrefix: String, lastNamePrefix: String): IO[Option[UserRow]] =
-    users.get.map(
-      _.find { case (_, row) => row.name.contains(firstNamePrefix) && row.surname.contains(lastNamePrefix) }.map(_._2)
-    )
+  def search(firstNamePrefix: String, lastNamePrefix: String): IO[List[UserRow]] =
+    users.get.map {
+      _.filter { case (_, row) =>
+        row.name.contains(firstNamePrefix) && row.surname.contains(lastNamePrefix)
+      }.values.toList
+    }
 
   def addFriend(userId: UUID, friendId: UUID): IO[Unit] =
     friends.update(_.updatedWith(userId)(_.map(_ + friendId).orElse(Set(friendId).some))).void

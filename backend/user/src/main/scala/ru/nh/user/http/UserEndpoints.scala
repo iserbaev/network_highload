@@ -65,8 +65,8 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
           }.flatMap {
-            case Some(user) => user.asRight
-            case None       => (StatusCode.NotFound, none).asLeft
+            case Nil   => (StatusCode.NotFound, none).asLeft
+            case users => users.asRight
           }
         }
     }

@@ -110,10 +110,10 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   def getUser(userId: UUID): ConnectionIO[Option[User]] =
     getUserRow(userId).flatMap(_.traverse(row => getHobbies(userId).map(row.toUser)))
 
-  def search(firstNamePrefix: String, lastNamePrefix: String): ConnectionIO[Option[UserRow]] =
+  def search(firstNamePrefix: String, lastNamePrefix: String): ConnectionIO[List[UserRow]] =
     searchUserStatement(firstNamePrefix, lastNamePrefix)
       .query[UserRow]
-      .option
+      .to[List]
 
   def addFriend(userId: UUID, friendId: UUID): doobie.ConnectionIO[Unit] = {
     val sql = sql"""INSERT INTO friends(user_id, friend_id)
