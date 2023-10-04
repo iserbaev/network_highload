@@ -13,7 +13,7 @@ trait UserAccessor[F[_]] {
   def getUserRow(userId: UUID): F[Option[UserRow]]
   def getUser(userId: UUID): F[Option[User]]
   def getHobbies(userId: UUID): F[List[String]]
-  def search(firstNamePrefix: String, lastNamePrefix: String): F[List[UserRow]]
+  def search(firstNamePrefix: String, lastNamePrefix: String, limit: Int): F[List[UserRow]]
 
   def mapK[G[_]](read: F ~> G, write: F ~> G): UserAccessor[G] =
     new UserAccessorMapK(this, read, write)
@@ -52,7 +52,7 @@ object UserAccessor {
     def getHobbies(userId: UUID): G[List[String]] =
       read(underlying.getHobbies(userId))
 
-    def search(firstNamePrefix: String, lastNamePrefix: String): G[List[UserRow]] =
-      read(underlying.search(firstNamePrefix, lastNamePrefix))
+    def search(firstNamePrefix: String, lastNamePrefix: String, limit: Int): G[List[UserRow]] =
+      read(underlying.search(firstNamePrefix, lastNamePrefix, limit))
   }
 }

@@ -27,7 +27,7 @@ private[auth] class LiveAuthService(applicationKey: String, loginAccessor: Login
   private def buildToken(id: String, password: String) = {
     val claim = JwtClaim(
       content = s"""{"id":"$id", "password":"$password"}""",
-      expiration = Some(Instant.now.plusSeconds(157784760).getEpochSecond),
+      expiration = Some(Instant.now.plusSeconds(600).getEpochSecond),
       issuedAt = Some(Instant.now.getEpochSecond)
     )
 

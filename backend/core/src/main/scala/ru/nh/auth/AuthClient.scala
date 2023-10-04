@@ -5,10 +5,19 @@ import cats.syntax.all._
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.{ Method, Request, Uri }
 import org.typelevel.log4cats.LoggerFactory
+import ru.nh.auth.AuthClient.LoginRequest
 import ru.nh.auth.AuthService.{ Auth, Token, UserPassword }
+import ru.nh.cache.{ AsyncCache, Caffeine }
 import ru.nh.http.ClientsSupport
 
-class AuthClient(host: String, port: Int, clientsSupport: ClientsSupport) extends AuthService {
+import scala.concurrent.duration.DurationInt
+
+class AuthClient(
+    host: String,
+    port: Int,
+    clientsSupport: ClientsSupport,
+    tokensCache: AsyncCache[LoginRequest, AuthService.Token]
+) extends AuthService {
   import ru.nh.http.json.all._
 
   private val baseUrl =
@@ -24,12 +33,16 @@ class AuthClient(host: String, port: Int, clientsSupport: ClientsSupport) extend
   }
 
   def login(id: String, password: String): IO[Option[AuthService.Token]] = {
-    val request = Request[IO](
-      method = Method.POST,
-      uri = baseUrl / "auth" / "login"
-    ).withEntity(UserPassword(id, password))
+    def runRequest(id: String, password: String) = {
+      val request = Request[IO](
+        method = Method.POST,
+        uri = baseUrl / "auth" / "login"
+      ).withEntity(UserPassword(id, password))
 
-    clientsSupport.runQueryRequest[Token](request).map(_.some)
+      clientsSupport.runQueryRequest[Token](request)
+    }
+
+    tokensCache.getF(LoginRequest(id, password), req => runRequest(req.id, req.password)).map(_.some)
   }
 
   def authorize(token: String): IO[Option[AuthService.Auth]] = {
@@ -43,9 +56,21 @@ class AuthClient(host: String, port: Int, clientsSupport: ClientsSupport) extend
 }
 
 object AuthClient {
-  def resource(host: String, port: Int)(implicit L: LoggerFactory[IO]): Resource[IO, AuthService] = Resource.suspend {
+  final case class LoginRequest(id: String, password: String)
+  def cached(host: String, port: Int, tokensCache: AsyncCache[LoginRequest, AuthService.Token])(
+      implicit L: LoggerFactory[IO]
+  ): Resource[IO, AuthService] = Resource.suspend {
     L.fromClass(classOf[AuthClient]).map { implicit log =>
-      ClientsSupport.createClient.map(c => new AuthClient(host, port, c))
+      ClientsSupport.createClient.map(c => new AuthClient(host, port, c, tokensCache))
     }
   }
+
+  def resource(host: String, port: Int)(
+      implicit L: LoggerFactory[IO]
+  ): Resource[IO, AuthService] =
+    Caffeine()
+      .expireAfterWrite(5.minutes)
+      .buildAsync[LoginRequest, AuthService.Token]
+      .flatMap(cached(host, port, _))
+
 }

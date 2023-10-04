@@ -19,9 +19,9 @@ class UserManager(
   def get(id: UUID): IO[Option[User]] =
     accessor.getUser(id).flatTap(u => log.debug(s"For $id got $u"))
 
-  def search(firstNamePrefix: String, lastNamePrefix: String): IO[List[User]] =
+  def search(firstNamePrefix: String, lastNamePrefix: String, limit: Int): IO[List[User]] =
     accessor
-      .search(firstNamePrefix, lastNamePrefix)
+      .search(firstNamePrefix, lastNamePrefix, limit)
       .flatMap(_.traverse(row => accessor.getHobbies(row.userId).map(row.toUser)))
 
   def addFriends(f: Friends): IO[Unit] =

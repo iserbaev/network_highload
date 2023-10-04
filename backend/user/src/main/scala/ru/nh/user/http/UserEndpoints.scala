@@ -56,9 +56,9 @@ class UserEndpoints(authService: AuthService, userService: UserService, appKey: 
     }
 
   val searchUserProfile: SEndpoint = userEndpointDescriptions.searchUserProfile
-    .serverLogic { auth => firstNamePrefixAndLastNamePrefix =>
+    .serverLogic { auth => params =>
       userService
-        .search(firstNamePrefixAndLastNamePrefix._1, firstNamePrefixAndLastNamePrefix._2)
+        .search(params.firstNamePrefix, params.lastNamePrefix, params.limit)
         .attempt
         .map {
           _.leftMap {

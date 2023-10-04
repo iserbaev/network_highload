@@ -41,10 +41,13 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
          |RETURNING user_id, created_at, name, surname, age, city, gender, biography, birthdate      
           """.stripMargin
 
-  private def searchUserStatement(firstNamePrefix: String, lastNamePrefix: String): Fragment =
+  private def searchUserStatement(firstNamePrefix: String, lastNamePrefix: String, limit: Int): Fragment =
     sql"""SELECT user_id, created_at, name, surname, age, city, gender, biography, birthdate
          |FROM users
-         |WHERE name LIKE ${firstNamePrefix + "%"} AND surname LIKE ${lastNamePrefix + "%"}
+         |WHERE name LIKE ${firstNamePrefix + "%"}
+         |  AND surname LIKE ${lastNamePrefix + "%"}
+         |ORDER BY user_id
+         |LIMIT $limit
          """.stripMargin
 
   private def insertHobbies[R[_]: Reducible](h: R[(UUID, String)]): Fragment =
@@ -110,8 +113,8 @@ class PostgresUserAccessor extends UserAccessor[ConnectionIO] {
   def getUser(userId: UUID): ConnectionIO[Option[User]] =
     getUserRow(userId).flatMap(_.traverse(row => getHobbies(userId).map(row.toUser)))
 
-  def search(firstNamePrefix: String, lastNamePrefix: String): ConnectionIO[List[UserRow]] =
-    searchUserStatement(firstNamePrefix, lastNamePrefix)
+  def search(firstNamePrefix: String, lastNamePrefix: String, limit: Int): ConnectionIO[List[UserRow]] =
+    searchUserStatement(firstNamePrefix, lastNamePrefix, limit)
       .query[UserRow]
       .to[List]
 
