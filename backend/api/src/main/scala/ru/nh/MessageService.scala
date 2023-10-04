@@ -7,8 +7,11 @@ import java.util.UUID
 
 trait MessageService {
 
-  def addMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit]
+  def addGroupMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit]
+  def addPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): IO[Unit]
 
-  def getMessages(conversationId: UUID): IO[Chain[Message]]
+  def getGroupMessages(conversationId: UUID): IO[Chain[GroupMessage]]
+
+  def getPrivateMessages(conversationId: UUID): IO[Chain[PrivateMessage]]
 
 }

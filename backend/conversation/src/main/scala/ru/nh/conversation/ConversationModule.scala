@@ -9,7 +9,7 @@ import ru.nh.conversation.db.{ PostgresConversationAccessor, PostgresMessageAcce
 import ru.nh.conversation.http.ConversationEndpoints
 import ru.nh.db.PostgresModule
 import ru.nh.http.SEndpoint
-import ru.nh.{ Conversation, ConversationService, Message, MessageService }
+import ru.nh.{ Conversation, ConversationService, GroupMessage, MessageService, PrivateMessage }
 
 import java.util.UUID
 
@@ -44,11 +44,17 @@ object ConversationModule {
           }
 
           val messageService: MessageService = new MessageService {
-            def addMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit] =
-              m.logMessage(sender, conversationId, message)
+            def addGroupMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit] =
+              m.logMessageToGroup(sender, conversationId, message)
 
-            def getMessages(conversationId: UUID): IO[Chain[Message]] =
-              m.getMessages(conversationId)
+            def getGroupMessages(conversationId: UUID): IO[Chain[GroupMessage]] =
+              m.getGroupMessages(conversationId)
+
+            def addPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): IO[Unit] =
+              m.logPrivateMessage(sender, to, conversationId, message)
+
+            def getPrivateMessages(conversationId: UUID): IO[Chain[PrivateMessage]] =
+              m.getPrivateMessages(conversationId)
           }
 
           def endpoints: NonEmptyList[SEndpoint] =

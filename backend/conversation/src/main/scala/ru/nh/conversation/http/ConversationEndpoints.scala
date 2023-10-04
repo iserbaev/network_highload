@@ -1,11 +1,10 @@
 package ru.nh.conversation.http
 
-import cats.data.{ NonEmptyList, NonEmptySet }
+import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all._
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.auth.AuthService
-import ru.nh.conversation.http.ConversationEndpointDescriptions.DialogMessage
 import ru.nh.http._
 import ru.nh.{ ConversationService, MessageService }
 import sttp.model.StatusCode
@@ -34,10 +33,9 @@ class ConversationEndpoints(
             conversationService
               .createConversation(UUID.fromString(auth.userId), params._1.some)
         }
-        .flatMap(conversationId =>
+        .flatTap(
           messageService
-            .addMessage(UUID.fromString(auth.userId), conversationId, params._2.text)
-            .as(conversationId)
+            .addPrivateMessage(UUID.fromString(auth.userId), params._1, _, params._2.text)
         )
         .attempt
         .flatTap(e => log.debug(s"Create conversation result $e"))
@@ -58,7 +56,7 @@ class ConversationEndpoints(
             new NoSuchElementException(s"Conversation not found for (${UUID.fromString(auth.userId)}, $id)")
           )
         )
-        .flatMap(c => messageService.getMessages(c.id).tupleLeft(c))
+        .flatMap(c => messageService.getPrivateMessages(c.id).tupleLeft(c))
         .flatTap { case (conversation, _) =>
           log.debug(s"Received private conversation for (${auth.userId}, $id}) [$conversation]")
         }
@@ -68,9 +66,7 @@ class ConversationEndpoints(
             case _: IllegalArgumentException => (StatusCode.BadRequest, none)
             case ex => (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, auth.userId, 0).some)
           }.flatMap { case (_, messages) =>
-            val participants = NonEmptySet.of(UUID.fromString(auth.userId), id)
-
-            messages.map(m => DialogMessage(m, participants)).toList.asRight
+            messages.toList.asRight
           }
         }
     }

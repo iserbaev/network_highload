@@ -12,10 +12,10 @@ conversation/target/universal/stage/bin/conversation-service-cli server --force-
 post/target/universal/stage/bin/post-service-cli server --force-migrate
 
 
-curl -N --location  \
+curl -N -X 'GET' \
   'http://localhost:8083/post/feed/0/2' \
-  -H 'accept: text/plain' \
-  -H 'Authorization: Bearer token'
+  -H 'accept: text/event-stream'  \
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTQyMTA0MTIsImlhdCI6MTY5NjQyNTY1MiwiaWQiOiJlN2JkYzNlYi0wM2U5LTQzZTYtYmI3ZC1kNzNlOTkzNjVhNGUiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.GYv11BHQAYQhhDmrU9PHDSUxC-zPNCA9NAdAiR_MlHY'
 
 
 docker push public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-d7071b52
@@ -27,7 +27,7 @@ docker push public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-d7071b52
 curl -N -X 'GET' \
   'http://localhost:8083/post/feed/posted' \
   -H 'accept: text/event-stream'  \
-  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTMxMDI4MjAsImlhdCI6MTY5NTMxODA2MCwiaWQiOiJhMTM3NTM0ZC01ZjM2LTQzNDItYWQ5OC1iYWU3ZTZhYThmYTkiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.uyEN7Ouamp6tif2J7l1yxMxvTpoCrBQgH9RMv7FV6qk'
+  -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTQyMTA0MTIsImlhdCI6MTY5NjQyNTY1MiwiaWQiOiJlN2JkYzNlYi0wM2U5LTQzZTYtYmI3ZC1kNzNlOTkzNjVhNGUiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.GYv11BHQAYQhhDmrU9PHDSUxC-zPNCA9NAdAiR_MlHY'
 
 
 
