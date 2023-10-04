@@ -10,7 +10,7 @@ import ru.nh.auth.AuthService.{ Auth, Token, UserPassword }
 import ru.nh.cache.{ AsyncCache, Caffeine }
 import ru.nh.http.ClientsSupport
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 
 class AuthClient(
     host: String,
@@ -57,20 +57,19 @@ class AuthClient(
 
 object AuthClient {
   final case class LoginRequest(id: String, password: String)
-  def cached(host: String, port: Int, tokensCache: AsyncCache[LoginRequest, AuthService.Token])(
-      implicit L: LoggerFactory[IO]
-  ): Resource[IO, AuthService] = Resource.suspend {
-    L.fromClass(classOf[AuthClient]).map { implicit log =>
-      ClientsSupport.createClient.map(c => new AuthClient(host, port, c, tokensCache))
-    }
-  }
 
-  def resource(host: String, port: Int)(
+  def resource(host: String, port: Int, cacheInvalidationTtl: FiniteDuration)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, AuthService] =
-    Caffeine()
-      .expireAfterWrite(5.minutes)
-      .buildAsync[LoginRequest, AuthService.Token]
-      .flatMap(cached(host, port, _))
+    (
+      Caffeine().expireAfterWrite(cacheInvalidationTtl).buildAsync[LoginRequest, AuthService.Token],
+      Resource.eval(L.fromClass(classOf[AuthClient]))
+    )
+      .flatMapN { (cache, log) =>
+        ClientsSupport.createClient(log).map(c => new AuthClient(host, port, c, cache))
+      }
+
+  def resource(host: String, port: Int)(implicit L: LoggerFactory[IO]): Resource[IO, AuthService] =
+    resource(host, port, 5.minute)
 
 }
