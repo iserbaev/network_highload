@@ -1,0 +1,39 @@
+version: '3.3'
+services:
+  tt1: # master
+    image: tarantool/tarantool:2.11.1
+    volumes:
+      - ./scripts/tarantool/:/opt/scripts
+    command: tarantool /opt/scripts/app.lua
+    environment:
+      - TARANTOOL_USER_NAME=tester
+      - TARANTOOL_USER_PASSWORD=tester
+    ports:
+      - 13301:3301
+      - 13013:33013
+  tt2: # slave1
+    image: tarantool/tarantool:2.11.1
+    volumes:
+      - ./scripts/tarantool/:/opt/scripts
+    command: tarantool /opt/scripts/app-slave.lua
+    environment:
+      - TARANTOOL_USER_NAME=tester
+      - TARANTOOL_USER_PASSWORD=tester
+    ports:
+      - 23301:3301
+      - 23013:33013
+  tt3: # slave2
+    image: tarantool/tarantool:2.11.1
+    volumes:
+      - ./scripts/tarantool/:/opt/scripts
+    command: tarantool /opt/scripts/app-slave.lua
+    environment:
+      - TARANTOOL_USER_NAME=tester
+      - TARANTOOL_USER_PASSWORD=tester
+    ports:
+      - 33301:3301
+      - 33013:33013
+
+# docker-compose -p nh -f dc-tarantool.yml up -d
+# docker rm -f nh_tt1_1 nh_tt2_1 nh_tt3_1
+# docker volume prune
