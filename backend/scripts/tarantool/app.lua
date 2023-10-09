@@ -66,11 +66,6 @@ box.once("schema", function()
 end)
 
 -- run http server
-
-local function handler(self)
-    return self:render { json = { ['Your-IP-Is'] = self.peer.host } }
-end
-
 local server = require('http.server').new(nil, 8080, { charset = "utf8" }) -- listen *:8080
 
 local handlers = require('http-handlers')
@@ -78,4 +73,3 @@ local handlers = require('http-handlers')
 server:route({ path = '/test' }, handlers.test_handler)
 
 server:start()
--- connect to localhost:8080 and see json
