@@ -63,7 +63,8 @@ box.once("schema", function()
 end)
 
 -- run http server
-local server = require('http.server').new(nil, 8080, { charset = "utf8" }) -- listen *:8080
+local http_port = os.getenv('TNT_HTTP_PORT') or '8080'
+local server = require('http.server').new(nil, http_port, { charset = "utf8" }) -- listen *:8080
 
 local handlers = require('http-handlers')
 
