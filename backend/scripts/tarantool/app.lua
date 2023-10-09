@@ -2,7 +2,10 @@
 -- for multi-master, you should not use counter data type or it would be out of sync/conflict
 -- so it's better to use master-slave (2 read_only replica)
 
+package.path = '/opt/scripts/?.lua;' .. package.path
+
 local console = require('console')
+
 box.cfg {
     listen = 3301,
     replication = {
@@ -16,7 +19,7 @@ box.cfg {
 console.listen('localhost:33013')
 
 box.once("schema", function()
-    box.schema.user.create('replicator', {password = 'password'})
+    box.schema.user.create('replicator', { password = 'password' })
     box.schema.user.grant('replicator', 'replication') -- grant replication role
 
     -- conversation space migration
@@ -61,3 +64,18 @@ box.once("schema", function()
 
     print('box.once executed on master')
 end)
+
+-- run http server
+
+local function handler(self)
+    return self:render { json = { ['Your-IP-Is'] = self.peer.host } }
+end
+
+local server = require('http.server').new(nil, 8080, { charset = "utf8" }) -- listen *:8080
+
+local handlers = require('http-handlers')
+
+server:route({ path = '/test' }, handlers.test_handler)
+
+server:start()
+-- connect to localhost:8080 and see json

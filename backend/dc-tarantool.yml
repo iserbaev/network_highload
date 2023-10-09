@@ -11,6 +11,7 @@ services:
     ports:
       - 13301:3301
       - 13013:33013
+      - 18080:8080
   tt2: # slave1
     image: tarantool/tarantool:2.11.1
     volumes:
