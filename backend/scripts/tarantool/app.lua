@@ -23,41 +23,79 @@ box.once("schema", function()
     box.schema.user.grant('replicator', 'replication') -- grant replication role
 
     -- conversation space migration
-    box.execute([[CREATE TABLE IF NOT EXISTS conversation_log
-            (
-                id                               UUID        DEFAULT gen_random_uuid() NOT NULL,
-                participant                      UUID                                  NOT NULL,
-                private_conversation             BOOLEAN                               NOT NULL,
-                private_conversation_participant UUID,
-                created_at                       TIMESTAMPTZ DEFAULT now()             NOT NULL,
-                PRIMARY KEY (id, participant)
-            )
-    ]])
+    --    id                               UUID        DEFAULT gen_random_uuid() NOT NULL,
+    --    participant                      UUID                                  NOT NULL,
+    --    private_conversation             BOOLEAN                               NOT NULL,
+    --    private_conversation_participant UUID,
+    --    created_at                       TIMESTAMPTZ DEFAULT now()             NOT NULL,
+    --    PRIMARY KEY (id, participant)
+    --);
+    conversation = box.schema.space.create('conversation', { if_not_exists = true })
+    conversation:format({
+        { name = 'id', type = 'unsigned' },
+        { name = 'participant', type = 'unsigned' },
+        { name = 'private_conversation', type = 'boolean' },
+        { name = 'private_conversation_participant', type = 'unsigned' },
+        { name = 'created_at', type = 'datetime' }
+    })
+    conversation:create_index('primary', {
+        type = 'TREE',
+        unique = true,
+        parts = { { field = 'id', type = 'unsigned' }, { field = 'participant', type = 'unsigned' } }
+    })
 
     -- private_message_log space migration
-    box.execute([[CREATE TABLE IF NOT EXISTS private_message_log
-        (
-            conversation_id    UUID                                                          NOT NULL,
-            conversation_index BIGINT      DEFAULT nextval('private_conversation_index_seq') NOT NULL,
-            message_from       UUID                                                          NOT NULL,
-            message_to         UUID                                                          NOT NULL,
-            message            TEXT                                                          NOT NULL,
-            created_at         TIMESTAMPTZ DEFAULT NOW()                                     NOT NULL,
-            PRIMARY KEY (conversation_id, conversation_index, message_from)
-        )
-    ]])
+    --CREATE TABLE IF NOT EXISTS private_message_log
+    --(
+    --    conversation_id    UUID                                                          NOT NULL,
+    --    conversation_index BIGINT      DEFAULT nextval('private_conversation_index_seq') NOT NULL,
+    --    message_from       UUID                                                          NOT NULL,
+    --    message_to         UUID                                                          NOT NULL,
+    --    message            TEXT                                                          NOT NULL,
+    --    created_at         TIMESTAMPTZ DEFAULT NOW()                                     NOT NULL,
+    --    PRIMARY KEY (conversation_id, conversation_index, message_from)
+    --);
+    private_message_log = box.schema.space.create('private_message_log', { if_not_exists = true })
+    private_message_log:format({
+        { name = 'conversation_id', type = 'unsigned' },
+        { name = 'conversation_index', type = 'integer' },
+        { name = 'message_from', type = 'unsigned' },
+        { name = 'message_to', type = 'unsigned' },
+        { name = 'message', type = 'string' },
+        { name = 'created_at', type = 'datetime' }
+    })
+    box.schema.sequence.create('private_conversation_index_seq', { if_not_exists = true })
+    private_message_log:create_index('primary', {
+        type = 'TREE',
+        unique = true,
+        sequence = 'private_conversation_index_seq',
+        parts = { { field = 'conversation_id', type = 'unsigned' }, { field = 'conversation_index', type = 'integer', }, { field = 'message_from', type = 'unsigned' } }
+    })
 
-    -- group_message_log space migrations
-    box.execute([[CREATE TABLE IF NOT EXISTS group_message_log
-        (
-            conversation_id    UUID                                                        NOT NULL,
-            conversation_index BIGINT      DEFAULT nextval('group_conversation_index_seq') NOT NULL,
-            sender             UUID                                                        NOT NULL,
-            message            TEXT                                                        NOT NULL,
-            created_at         TIMESTAMPTZ DEFAULT NOW()                                   NOT NULL,
-            PRIMARY KEY (conversation_id, conversation_index, sender)
-        )
-    ]])
+    --CREATE TABLE IF NOT EXISTS group_message_log
+    --(
+    --    conversation_id    UUID                                                        NOT NULL,
+    --    conversation_index BIGINT      DEFAULT nextval('group_conversation_index_seq') NOT NULL,
+    --    sender             UUID                                                        NOT NULL,
+    --    message            TEXT                                                        NOT NULL,
+    --    created_at         TIMESTAMPTZ DEFAULT NOW()                                   NOT NULL,
+    --    PRIMARY KEY (conversation_id, conversation_index, sender)
+    --);
+    group_message_log = box.schema.space.create('group_message_log', { if_not_exists = true })
+    group_message_log:format({
+        { name = 'conversation_id', type = 'unsigned' },
+        { name = 'conversation_index', type = 'integer' },
+        { name = 'sender', type = 'unsigned' },
+        { name = 'message', type = 'string' },
+        { name = 'created_at', type = 'datetime' }
+    })
+    box.schema.sequence.create('group_conversation_index_seq', { if_not_exists = true })
+    group_message_log:create_index('primary', {
+        type = 'TREE',
+        unique = true,
+        sequence = 'group_conversation_index_seq',
+        parts = { { field = 'conversation_id', type = 'unsigned' }, { field = 'conversation_index', type = 'integer', }, { field = 'sender', type = 'unsigned' } }
+    })
 
     print('box.once executed on master')
 end)
