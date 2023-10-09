@@ -1,4 +1,4 @@
-import sbt._
+import sbt.{ Def, * }
 
 object Dependencies {
 
@@ -59,6 +59,7 @@ object Dependencies {
     val SttpModel          = "1.6.0"
     val SttpShared         = "1.3.15"
     val SttpTapir          = "1.6.0"
+    val TarantoolCartridge = "0.12.1"
     val Vault              = "3.5.0"
 
     val ScalaPbCommonProtos = "2.9.6-0"
@@ -246,6 +247,8 @@ object Dependencies {
       "com.softwaremill.sttp.client3" %% "circe"                          % Versions.SttpClient3
     )
 
+    val tarantoolCartridge = Seq("io.tarantool" % "cartridge-driver" % Versions.TarantoolCartridge)
+
     val tapirCore = Seq(
       "com.softwaremill.sttp.model" %% "core"             % Versions.SttpModel,
       "com.softwaremill.sttp.tapir" %% "tapir-core"       % Versions.SttpTapir,
@@ -368,4 +371,30 @@ object Dependencies {
   val sbtScalafix = Def.setting(
     sbtScalafixTypelevel
   )
+
+  val coreDeps: Def.Initialize[Seq[ModuleID]] =
+    Def.setting(
+      conf.value ++ common.value ++ connectorsSql.value ++
+        http.value ++ httpTapir.value ++ json.value ++
+        metrics.value ++ neo4jClient.value
+    )
+
+  val moduleDeps: Def.Initialize[Seq[ModuleID]] =
+    Def.setting(
+      cli.value ++ conf.value ++ common.value ++
+        connectorsSql.value ++ http.value ++ httpTapir.value ++
+        json.value ++ metrics.value
+    )
+
+  val conversationDeps =
+    Def.setting(moduleDeps.value ++ tarantoolCartridge)
+
+  val potsDeps: Def.Initialize[Seq[ModuleID]] =
+    moduleDeps
+
+  val authDeps: Def.Initialize[Seq[ModuleID]] =
+    moduleDeps
+
+  val userDeps: Def.Initialize[Seq[ModuleID]] =
+    Def.setting(moduleDeps.value ++ neo4jClient.value)
 }

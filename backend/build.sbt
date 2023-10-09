@@ -103,7 +103,7 @@ lazy val core = Project(id = "core", base = file("core"))
   .dependsOn(api)
   .settings(
     commonSettings,
-    libraryDependencies ++= (Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value ++ Dependencies.neo4jClient.value),
+    libraryDependencies ++= Dependencies.coreDeps.value,
     libraryDependencies ++= Dependencies.commonTest.value,
   )
 
@@ -134,7 +134,7 @@ lazy val auth = Project(id = "auth", base = file("auth"))
       "-Dconfig.file=../src/universal/conf/application.conf",
       "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
     ),
-    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= Dependencies.authDeps.value,
     libraryDependencies ++= Dependencies.commonTest.value,
     Compile / mainClass  := Some("ru.nh.auth.cli.AuthServiceCli"),
     executableScriptName := "auth-service-cli",
@@ -172,7 +172,7 @@ lazy val conversation = Project(id = "conversation", base = file("conversation")
       "-Dconfig.file=../src/universal/conf/application.conf",
       "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
     ),
-    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= Dependencies.conversationDeps.value,
     libraryDependencies ++= Dependencies.commonTest.value,
     Compile / mainClass  := Some("ru.nh.conversation.cli.ConversationServiceCli"),
     executableScriptName := "conversation-service-cli",
@@ -210,7 +210,7 @@ lazy val post = Project(id = "post", base = file("post"))
       "-Dconfig.file=../src/universal/conf/application.conf",
       "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
     ),
-    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value),
+    libraryDependencies ++= Dependencies.potsDeps.value,
     libraryDependencies ++= Dependencies.commonTest.value,
     Compile / mainClass  := Some("ru.nh.post.cli.PostServiceCli"),
     executableScriptName := "post-service-cli",
@@ -248,7 +248,7 @@ lazy val user = Project(id = "user", base = file("user"))
       "-Dconfig.file=../src/universal/conf/application.conf",
       "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
     ),
-    libraryDependencies ++= (Dependencies.cli.value ++ Dependencies.conf.value ++ Dependencies.common.value ++ Dependencies.connectorsSql.value ++ Dependencies.http.value ++ Dependencies.httpTapir.value ++ Dependencies.json.value ++ Dependencies.metrics.value ++ Dependencies.neo4jClient.value),
+    libraryDependencies ++= Dependencies.userDeps.value,
     libraryDependencies ++= Dependencies.commonTest.value,
     Compile / mainClass  := Some("ru.nh.user.cli.UserServiceCli"),
     executableScriptName := "user-service-cli",
