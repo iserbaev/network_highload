@@ -23,7 +23,6 @@ box.once("schema", function()
     box.schema.user.grant('replicator', 'replication') -- grant replication role
 
     -- conversation space migration
-    conversation = box.schema.space.create('conversation', { if_not_exists = true })
     box.execute([[CREATE TABLE IF NOT EXISTS conversation_log
             (
                 id                               UUID        DEFAULT gen_random_uuid() NOT NULL,
@@ -36,7 +35,6 @@ box.once("schema", function()
     ]])
 
     -- private_message_log space migration
-    private_message_log = box.schema.space.create('private_message_log', { if_not_exists = true })
     box.execute([[CREATE TABLE IF NOT EXISTS private_message_log
         (
             conversation_id    UUID                                                          NOT NULL,
@@ -50,7 +48,6 @@ box.once("schema", function()
     ]])
 
     -- group_message_log space migrations
-    group_message_log = box.schema.space.create('group_message_log', { if_not_exists = true })
     box.execute([[CREATE TABLE IF NOT EXISTS group_message_log
         (
             conversation_id    UUID                                                        NOT NULL,

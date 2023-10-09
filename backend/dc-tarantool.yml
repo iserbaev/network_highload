@@ -23,6 +23,7 @@ services:
     ports:
       - 23301:3301
       - 23013:33013
+      - 28080:8080
   tt3: # slave2
     image: tarantool/tarantool:2.11.1
     volumes:
@@ -34,6 +35,7 @@ services:
     ports:
       - 33301:3301
       - 33013:33013
+      - 38080:8080
 
 # docker-compose -p nh -f dc-tarantool.yml up -d
 # docker rm -f nh_tt1_1 nh_tt2_1 nh_tt3_1
