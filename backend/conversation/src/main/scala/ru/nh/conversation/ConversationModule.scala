@@ -8,8 +8,10 @@ import ru.nh.auth.AuthService
 import ru.nh.conversation.db.{ PostgresConversationAccessor, PostgresMessageAccessor }
 import ru.nh.conversation.http.ConversationEndpoints
 import ru.nh.db.PostgresModule
+import ru.nh.db.tarantool.TarantoolModule
 import ru.nh.http.SEndpoint
-import ru.nh.{ Conversation, ConversationService, GroupMessage, MessageService, PrivateMessage }
+import ru.nh.message.MessageAccessor
+import ru.nh.{ Conversation, ConversationService, MessageService }
 
 import java.util.UUID
 
@@ -22,40 +24,41 @@ trait ConversationModule {
 }
 
 object ConversationModule {
-  def resource(postgresModule: PostgresModule, authService: AuthService)(
+  def postgres(postgresModule: PostgresModule, authService: AuthService)(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, ConversationModule] =
-    (PostgresConversationAccessor.inIO(postgresModule.rw), PostgresMessageAccessor.inIO(postgresModule.rw)).mapN {
+    (PostgresConversationAccessor.inIO(postgresModule.rw), PostgresMessageAccessor.inIO(postgresModule.rw)).flatMapN {
       (c, m) =>
-        new ConversationModule {
-          val service: ConversationService = new ConversationService {
-            def createConversation(participant: UUID, privateParticipant: Option[UUID]): IO[UUID] =
-              c.logConversation(participant, privateParticipant)
-
-            def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Option[Conversation]] =
-              c.getPrivateConversation(firstPerson, participant)
-                .map(_.map(_.toConversation))
-
-            def getConversations(participant: UUID, limit: Int): IO[Chain[Conversation]] =
-              c.getConversations(participant, limit).map(_.map(_.toConversation))
-          }
-
-          val messageService: MessageService = new MessageService {
-            def addGroupMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit] =
-              m.logMessageToGroup(sender, conversationId, 1, message) // TODO sequence
-
-            def getGroupMessages(conversationId: UUID): IO[Chain[GroupMessage]] =
-              m.getGroupMessages(conversationId)
-
-            def addPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): IO[Unit] =
-              m.logPrivateMessage(sender, to, conversationId, 1, message) // TODO sequence
-
-            def getPrivateMessages(conversationId: UUID): IO[Chain[PrivateMessage]] =
-              m.getPrivateMessages(conversationId)
-          }
-
-          def endpoints: NonEmptyList[SEndpoint] =
-            new ConversationEndpoints(authService, service, messageService).all
-        }
+        build(c, m, authService)
     }
+
+  def tarantool(tarantoolModule: TarantoolModule, authService: AuthService)(
+      implicit L: LoggerFactory[IO]
+  ): Resource[IO, ConversationModule] =
+    build(tarantoolModule.client, tarantoolModule.client, authService)
+
+  private def build(c: ConversationAccessor[IO], m: MessageAccessor[IO], authService: AuthService)(
+      implicit L: LoggerFactory[IO]
+  ) =
+    LiveMessageService.resource(m).map { ms =>
+      new ConversationModule {
+        val service: ConversationService = new ConversationService {
+          def createConversation(participant: UUID, privateParticipant: Option[UUID]): IO[UUID] =
+            c.logConversation(participant, privateParticipant)
+
+          def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Option[Conversation]] =
+            c.getPrivateConversation(firstPerson, participant)
+              .map(_.map(_.toConversation))
+
+          def getConversations(participant: UUID, limit: Int): IO[Chain[Conversation]] =
+            c.getConversations(participant, limit).map(_.map(_.toConversation))
+        }
+
+        val messageService: MessageService = ms
+
+        def endpoints: NonEmptyList[SEndpoint] =
+          new ConversationEndpoints(authService, service, messageService).all
+      }
+    }
+
 }

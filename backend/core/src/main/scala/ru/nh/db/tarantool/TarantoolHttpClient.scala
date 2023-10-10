@@ -63,13 +63,13 @@ class TarantoolHttpClient(
 
   def getConversations(participant: UUID, limit: Int): IO[Chain[ConversationAccessor.ConversationRow]] = ???
 
-  def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Int, message: String): IO[Unit] = ???
+  def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Long, message: String): IO[Unit] = ???
 
   def logPrivateMessage(
       sender: UUID,
       to: UUID,
       conversationId: UUID,
-      conversationIndex: Int,
+      conversationIndex: Long,
       message: String
   ): IO[Unit] = {
     val request = Request[IO](
@@ -127,7 +127,7 @@ object TarantoolHttpClient {
 
   final case class LogPrivateMessageRequest(
       conversation_id: UUID,
-      conversation_index: Int,
+      conversation_index: Long,
       message_from: UUID,
       message_to: UUID,
       message: String

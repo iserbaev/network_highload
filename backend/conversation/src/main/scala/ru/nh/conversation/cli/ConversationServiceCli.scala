@@ -60,7 +60,7 @@ object ConversationCli {
             .flatMap { case (m, pg) =>
               AuthClient.resource(config.auth.host, config.auth.port).flatMap { auth =>
                 ConversationModule
-                  .resource(pg, auth)
+                  .postgres(pg, auth)
                   .flatMap(conversationModule =>
                     HttpModule
                       .resource(config.http, conversationModule.endpoints, m, "conversation")

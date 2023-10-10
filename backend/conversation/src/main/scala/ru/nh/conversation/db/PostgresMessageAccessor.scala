@@ -17,7 +17,7 @@ class PostgresMessageAccessor extends MessageAccessor[ConnectionIO] {
   def logMessageToGroup(
       sender: UUID,
       conversationId: UUID,
-      conversationIndex: Int,
+      conversationIndex: Long,
       message: String
   ): ConnectionIO[Unit] = ensureUpdated {
     sql"""INSERT INTO group_message_log(sender, conversation_id, conversation_index, message)
@@ -38,7 +38,7 @@ class PostgresMessageAccessor extends MessageAccessor[ConnectionIO] {
       sender: UUID,
       to: UUID,
       conversationId: UUID,
-      conversationIndex: Int,
+      conversationIndex: Long,
       message: String
   ): ConnectionIO[Unit] =
     ensureUpdated {

@@ -8,9 +8,9 @@ import ru.nh.{ GroupMessage, PrivateMessage }
 import java.util.UUID
 
 trait MessageAccessor[F[_]] {
-  def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Int, message: String): F[Unit]
+  def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Long, message: String): F[Unit]
 
-  def logPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, conversationIndex: Int, message: String): F[Unit]
+  def logPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, conversationIndex: Long, message: String): F[Unit]
 
   def getGroupMessages(conversationId: UUID): F[Chain[GroupMessage]]
 
@@ -27,14 +27,14 @@ object MessageAccessor {
       read: F ~> G,
       write: F ~> G
   ) extends MessageAccessor[G] {
-    def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Int, message: String): G[Unit] =
+    def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Long, message: String): G[Unit] =
       write(underlying.logMessageToGroup(sender, conversationId, conversationIndex, message))
 
     def logPrivateMessage(
         sender: UUID,
         to: UUID,
         conversationId: UUID,
-        conversationIndex: Int,
+        conversationIndex: Long,
         message: String
     ): G[Unit] =
       write(underlying.logPrivateMessage(sender, to, conversationId, conversationIndex, message))
