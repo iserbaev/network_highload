@@ -14,9 +14,14 @@ import java.util.UUID
 class PostgresMessageAccessor extends MessageAccessor[ConnectionIO] {
   import ru.nh.db.ensureUpdated
 
-  def logMessageToGroup(sender: UUID, conversationId: UUID, message: String): ConnectionIO[Unit] = ensureUpdated {
-    sql"""INSERT INTO group_message_log(sender, conversation_id, message)
-         |VALUES ($sender, $conversationId, $message)
+  def logMessageToGroup(
+      sender: UUID,
+      conversationId: UUID,
+      conversationIndex: Int,
+      message: String
+  ): ConnectionIO[Unit] = ensureUpdated {
+    sql"""INSERT INTO group_message_log(sender, conversation_id, conversation_index, message)
+         |VALUES ($sender, $conversationId, $conversationIndex, $message)
          """.stripMargin.update.run
   }
 
@@ -29,10 +34,16 @@ class PostgresMessageAccessor extends MessageAccessor[ConnectionIO] {
       .to[List]
       .map(Chain.fromSeq)
 
-  def logPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): ConnectionIO[Unit] =
+  def logPrivateMessage(
+      sender: UUID,
+      to: UUID,
+      conversationId: UUID,
+      conversationIndex: Int,
+      message: String
+  ): ConnectionIO[Unit] =
     ensureUpdated {
-      sql"""INSERT INTO private_message_log(message_from, message_to, conversation_id, message)
-           |VALUES ($sender, $to, $conversationId, $message)
+      sql"""INSERT INTO private_message_log(message_from, message_to, conversation_id, conversation_index, message)
+           |VALUES ($sender, $to, $conversationId, $conversationIndex, $message)
            """.stripMargin.update.run
     }
 
@@ -60,7 +71,7 @@ object PostgresMessageAccessor {
       implicit L: LoggerFactory[IO]
   ): Resource[IO, MessageAccessor[IO]] = Resource.suspend {
     L.fromClass(classOf[PostgresMessageAccessor]).map { implicit log =>
-      resource.map(_.mapK(rw.readK, rw.writeK))
+      resource.map(_.messageMapK(rw.readK, rw.writeK))
     }
   }
 }

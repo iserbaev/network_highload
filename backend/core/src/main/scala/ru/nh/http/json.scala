@@ -2,8 +2,8 @@ package ru.nh.http
 
 import io.circe._
 import io.circe.generic.semiauto._
+import ru.nh._
 import ru.nh.auth.AuthService.{ Auth, Token, UserPassword }
-import ru.nh.{ Id, Post, PrivateMessage, RegisterUserCommand, User }
 
 object json {
   object all extends PostJsonImplicits with UserJsonImplicits with ConversationJsonImplicits with CommonImplicits
@@ -43,6 +43,9 @@ trait PostJsonImplicits {
 }
 
 trait ConversationJsonImplicits {
+  implicit val cDecoder: Decoder[Conversation]          = deriveDecoder[Conversation]
+  implicit val cEncoder: Encoder.AsObject[Conversation] = deriveEncoder[Conversation]
+
   implicit val pmDecoder: Decoder[PrivateMessage]          = deriveDecoder[PrivateMessage]
   implicit val pmEncoder: Encoder.AsObject[PrivateMessage] = deriveEncoder[PrivateMessage]
 }

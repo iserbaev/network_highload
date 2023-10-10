@@ -8,15 +8,15 @@ import ru.nh.{ GroupMessage, PrivateMessage }
 import java.util.UUID
 
 trait MessageAccessor[F[_]] {
-  def logMessageToGroup(sender: UUID, conversationId: UUID, message: String): F[Unit]
+  def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Int, message: String): F[Unit]
 
-  def logPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): F[Unit]
+  def logPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, conversationIndex: Int, message: String): F[Unit]
 
   def getGroupMessages(conversationId: UUID): F[Chain[GroupMessage]]
 
   def getPrivateMessages(conversationId: UUID): F[Chain[PrivateMessage]]
 
-  def mapK[G[_]](read: F ~> G, write: F ~> G): MessageAccessor[G] =
+  def messageMapK[G[_]](read: F ~> G, write: F ~> G): MessageAccessor[G] =
     new MessageAccessorMapK(this, read, write)
 }
 
@@ -27,11 +27,17 @@ object MessageAccessor {
       read: F ~> G,
       write: F ~> G
   ) extends MessageAccessor[G] {
-    def logMessageToGroup(sender: UUID, conversationId: UUID, message: String): G[Unit] =
-      write(underlying.logMessageToGroup(sender, conversationId, message))
+    def logMessageToGroup(sender: UUID, conversationId: UUID, conversationIndex: Int, message: String): G[Unit] =
+      write(underlying.logMessageToGroup(sender, conversationId, conversationIndex, message))
 
-    def logPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): G[Unit] =
-      write(underlying.logPrivateMessage(sender, to, conversationId, message))
+    def logPrivateMessage(
+        sender: UUID,
+        to: UUID,
+        conversationId: UUID,
+        conversationIndex: Int,
+        message: String
+    ): G[Unit] =
+      write(underlying.logPrivateMessage(sender, to, conversationId, conversationIndex, message))
 
     def getGroupMessages(conversationId: UUID): G[Chain[GroupMessage]] =
       read(underlying.getGroupMessages(conversationId))

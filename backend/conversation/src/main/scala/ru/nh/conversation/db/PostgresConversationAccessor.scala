@@ -12,7 +12,6 @@ import ru.nh.conversation.ConversationAccessor.ConversationRow
 import java.util.UUID
 
 class PostgresConversationAccessor extends ConversationAccessor[ConnectionIO] {
-  import ru.nh.db.ensureUpdated
 
   def logConversation(participant: UUID, privateParticipant: Option[UUID]): ConnectionIO[UUID] = {
     val privateConversation = privateParticipant.nonEmpty
@@ -24,12 +23,6 @@ class PostgresConversationAccessor extends ConversationAccessor[ConnectionIO] {
       .withGeneratedKeys[UUID]("id")
       .compile
       .lastOrError
-  }
-
-  def addParticipant(conversationId: UUID, participant: UUID): ConnectionIO[Unit] = ensureUpdated {
-    sql"""INSERT INTO conversation_log(id, participant, private_conversation)
-         |VALUES ($conversationId, $participant, false)
-           """.stripMargin.update.run
   }
 
   def getPrivateConversation(firstPerson: UUID, participant: UUID): ConnectionIO[Option[ConversationRow]] =

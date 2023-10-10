@@ -32,9 +32,6 @@ object ConversationModule {
             def createConversation(participant: UUID, privateParticipant: Option[UUID]): IO[UUID] =
               c.logConversation(participant, privateParticipant)
 
-            def addParticipant(conversationId: UUID, participant: UUID): IO[Unit] =
-              c.addParticipant(conversationId, participant)
-
             def getPrivateConversation(firstPerson: UUID, participant: UUID): IO[Option[Conversation]] =
               c.getPrivateConversation(firstPerson, participant)
                 .map(_.map(_.toConversation))
@@ -45,13 +42,13 @@ object ConversationModule {
 
           val messageService: MessageService = new MessageService {
             def addGroupMessage(sender: UUID, conversationId: UUID, message: String): IO[Unit] =
-              m.logMessageToGroup(sender, conversationId, message)
+              m.logMessageToGroup(sender, conversationId, 1, message) // TODO sequence
 
             def getGroupMessages(conversationId: UUID): IO[Chain[GroupMessage]] =
               m.getGroupMessages(conversationId)
 
             def addPrivateMessage(sender: UUID, to: UUID, conversationId: UUID, message: String): IO[Unit] =
-              m.logPrivateMessage(sender, to, conversationId, message)
+              m.logPrivateMessage(sender, to, conversationId, 1, message) // TODO sequence
 
             def getPrivateMessages(conversationId: UUID): IO[Chain[PrivateMessage]] =
               m.getPrivateMessages(conversationId)
