@@ -38,7 +38,7 @@ exports.add_conversation = function(req)
 
     log.info("Conversation saved success")
 
-    local resp = req:render { json = '{}' }
+    local resp = req:render { json = conversation_id }
     resp.status = 201
     return resp
 end
@@ -49,7 +49,7 @@ exports.get_private_conversation = function(req)
     log.info("Received request to get_private_conversation")
     log.info(participant_id)
     log.info(private_participant_id)
-    local conversation = box.space.conversation.index.participants:select({uuid.fromstr(participant_id), uuid.fromstr(private_participant_id)})
+    local conversation = box.space.conversation.index.participants:select({ uuid.fromstr(participant_id), uuid.fromstr(private_participant_id) })
 
     local resp = req:render({ json = conversation })
     resp.status = 200
@@ -71,7 +71,7 @@ exports.add_dialog = function(req)
     }
     log.info("Dialog saved success")
 
-    local resp = req:render { json = '{}'  }
+    local resp = req:render { json = '{}' }
     resp.status = 201
     return resp
 end

@@ -1,0 +1,52 @@
+###
+POST http://localhost:18080/conversation
+Accept: application/json
+Content-Type: application/json
+
+{
+  "participant": "44c4fd1e-986f-42ac-a181-6630b10fce42",
+  "private_conversation": true,
+  "private_conversation_participant": "9fdb4965-6900-48ef-ae6c-94132b404800"
+}
+
+###
+POST http://localhost:18080/conversation
+Accept: application/json
+Content-Type: application/json
+
+{
+  "participant": "44c4fd1e-986f-42ac-a181-6630b10fce42",
+  "private_conversation": false
+}
+
+###
+
+GET http://localhost:18080/conversation/44c4fd1e-986f-42ac-a181-6630b10fce42/9fdb4965-6900-48ef-ae6c-94132b404800
+Accept: application/json
+
+###
+GET http://localhost:18080/conversation/9fdb4965-6900-48ef-ae6c-94132b404800/44c4fd1e-986f-42ac-a181-6630b10fce42
+Accept: application/json
+
+###
+POST http://localhost:18080/dialogs
+Accept: application/json
+Content-Type: application/json
+
+{
+  "conversation_id": "6ce33c8b-2629-48b8-b990-691e7c7fad06",
+  "conversation_index": 1,
+  "message_from": "44c4fd1e-986f-42ac-a181-6630b10fce42",
+  "message_to": "9fdb4965-6900-48ef-ae6c-94132b404800",
+  "message": "lorem"
+}
+
+###
+
+GET http://localhost:18080/dialogs/6ce33c8b-2629-48b8-b990-691e7c7fad06
+Accept: application/json
+
+###
+GET http://localhost:18080/dialogs
+Accept: application/json
+

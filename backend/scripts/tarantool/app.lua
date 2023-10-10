@@ -72,7 +72,7 @@ box.once("schema", function()
     private_message_log:create_index('primary', {
         type = 'TREE',
         unique = true,
-        parts = { { field = 'conversation_id', type = 'uuid' }, { field = 'conversation_index', type = 'integer' }, { field = 'message_from', type = 'uuid' } }
+        parts = { { field = 'conversation_id', type = 'uuid' }, { field = 'conversation_index', type = 'integer' } }
     })
 
     --CREATE TABLE IF NOT EXISTS group_message_log
