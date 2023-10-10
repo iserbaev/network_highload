@@ -12,6 +12,7 @@ import ru.nh.config.ServerConfig
 import ru.nh.conversation.ConversationModule
 import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
+import ru.nh.db.tarantool.TarantoolModule
 import ru.nh.http.HttpModule
 import ru.nh.metrics.MetricsModule
 
@@ -27,8 +28,8 @@ object ConversationServiceCli
 
 object ConversationCli {
   def program(migrate: Boolean, mock: Boolean): IO[ExitCode] =
-    ServerConfig.load
-      .flatMap { config =>
+    (ServerConfig.load, TarantoolModule.Config.load)
+      .flatMapN { (config, tarantoolConfig) =>
         implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
         implicit val logger: SelfAwareStructuredLogger[IO] =
           loggerFactory.getLoggerFromClass(classOf[ConversationCli.type])
@@ -57,10 +58,11 @@ object ConversationCli {
           MetricsModule
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
-            .flatMap { case (m, pg) =>
+            .flatMap(t => TarantoolModule.resource(tarantoolConfig).tupleLeft(t))
+            .flatMap { case ((m, _), tt) =>
               AuthClient.resource(config.auth.host, config.auth.port).flatMap { auth =>
                 ConversationModule
-                  .postgres(pg, auth)
+                  .tarantool(tt, auth)
                   .flatMap(conversationModule =>
                     HttpModule
                       .resource(config.http, conversationModule.endpoints, m, "conversation")

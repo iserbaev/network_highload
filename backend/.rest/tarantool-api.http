@@ -25,7 +25,7 @@ GET http://localhost:18080/conversation/44c4fd1e-986f-42ac-a181-6630b10fce42/9fd
 Accept: application/json
 
 ###
-GET http://localhost:18080/conversation/9fdb4965-6900-48ef-ae6c-94132b404800/44c4fd1e-986f-42ac-a181-6630b10fce42
+GET http://localhost:18080/conversation/0826f9bf-cd36-45ef-a34e-a4ed2efd4bff/320a4661-63ed-4e24-aa27-667587c2d26c
 Accept: application/json
 
 ###
@@ -43,7 +43,7 @@ Content-Type: application/json
 
 ###
 
-GET http://localhost:18080/dialogs/6ce33c8b-2629-48b8-b990-691e7c7fad06
+GET http://localhost:18080/dialogs/56dd6da9-0c8f-4cba-b445-8894c0ebeb4e
 Accept: application/json
 
 ###

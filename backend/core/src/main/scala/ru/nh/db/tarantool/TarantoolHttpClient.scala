@@ -3,6 +3,7 @@ package ru.nh.db.tarantool
 import cats.data.Chain
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
+import io.circe.Decoder
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.{ Method, Request, Uri }
 import org.typelevel.log4cats.LoggerFactory
@@ -14,6 +15,7 @@ import ru.nh.{ GroupMessage, PrivateMessage }
 
 import java.time.Instant
 import java.util.UUID
+import scala.util.{ Failure, Success }
 
 class TarantoolHttpClient(
     host: String,
@@ -41,23 +43,13 @@ class TarantoolHttpClient(
       method = Method.GET,
       uri = baseUrl / "conversation" / firstPerson / participant
     )
+    implicit val customDecoder: Decoder[ConversationAccessor.ConversationRow] =
+      TarantoolHttpClient.customConversionDecoder
+
     clientsSupport
-      .runQueryRequest[List[List[String]]](request)
-      .map {
-        _.headOption.flatMap {
-          case List(id, participant, privateConversation, privateConversationParticipant, createdAt) =>
-            ConversationAccessor
-              .ConversationRow(
-                UUID.fromString(id),
-                UUID.fromString(participant),
-                privateConversation.toBoolean,
-                UUID.fromString(privateConversationParticipant).some,
-                Instant.parse(createdAt)
-              )
-              .some
-          case _ =>
-            none
-        }
+      .runQueryRequest[List[ConversationAccessor.ConversationRow]](request)
+      .map { res =>
+        res.headOption
       }
   }
 
@@ -74,7 +66,7 @@ class TarantoolHttpClient(
   ): IO[Unit] = {
     val request = Request[IO](
       method = Method.POST,
-      uri = baseUrl / "conversation"
+      uri = baseUrl / "dialogs"
     ).withEntity(LogPrivateMessageRequest(conversationId, conversationIndex, sender, to, message))
 
     clientsSupport
@@ -88,23 +80,11 @@ class TarantoolHttpClient(
       method = Method.GET,
       uri = baseUrl / "dialogs" / conversationId
     )
+
+    implicit val customDecoder: Decoder[PrivateMessage] = TarantoolHttpClient.customPrivateMessageDecoder
+
     clientsSupport
-      .runQueryRequest[List[List[String]]](request)
-      .map {
-        _.flatMap {
-          case List(conversationId, conversationIndex, sender, recipient, message, createdAt) =>
-            PrivateMessage(
-              UUID.fromString(conversationId),
-              conversationIndex.toLong,
-              UUID.fromString(sender),
-              UUID.fromString(recipient),
-              message,
-              Instant.parse(createdAt)
-            ).some
-          case _ =>
-            none
-        }
-      }
+      .runQueryRequest[List[PrivateMessage]](request)
       .map(Chain.fromSeq)
   }
 
@@ -136,6 +116,77 @@ object TarantoolHttpClient {
     implicit val lpmrDecoder: Decoder[LogPrivateMessageRequest]          = deriveDecoder[LogPrivateMessageRequest]
     implicit val lpmrEncoder: Encoder.AsObject[LogPrivateMessageRequest] = deriveEncoder[LogPrivateMessageRequest]
   }
+
+  private implicit val decodeBoolOrString: Decoder[Either[Boolean, String]] =
+    Decoder[String].map(Right(_)).or(Decoder[Boolean].map(Left(_)))
+
+  private implicit val decodeIntOrString: Decoder[Either[Int, String]] =
+    Decoder[String].map(Right(_)).or(Decoder[Int].map(Left(_)))
+
+  private[tarantool] val customConversionDecoder: Decoder[ConversationAccessor.ConversationRow] =
+    Decoder
+      .decodeList[Either[Boolean, String]]
+      .map { res =>
+        res
+          .map {
+            case Left(value)  => Some(value.toString)
+            case Right(value) => Some(value)
+          }
+      }
+      .emapTry {
+        case List(
+              Some(id),
+              Some(participant),
+              Some(privateConversation),
+              Some(privateConversationParticipant),
+              Some(createdAt)
+            ) =>
+          Success(
+            ConversationAccessor.ConversationRow(
+              UUID.fromString(id),
+              UUID.fromString(participant),
+              privateConversation.toBoolean,
+              UUID.fromString(privateConversationParticipant).some,
+              Instant.parse(createdAt)
+            )
+          )
+        case _ =>
+          Failure(new IllegalArgumentException(s"Can't decode conversion"))
+      }
+
+  private[tarantool] val customPrivateMessageDecoder: Decoder[PrivateMessage] =
+    Decoder
+      .decodeList[Either[Int, String]]
+      .map { res =>
+        res
+          .map {
+            case Left(value)  => Some(value.toString)
+            case Right(value) => Some(value)
+          }
+      }
+      .emapTry {
+        case List(
+              Some(conversationId),
+              Some(conversationIndex),
+              Some(sender),
+              Some(recipient),
+              Some(message),
+              Some(createdAt)
+            ) =>
+          Success(
+            PrivateMessage(
+              UUID.fromString(conversationId),
+              conversationIndex.toLong,
+              UUID.fromString(sender),
+              UUID.fromString(recipient),
+              message,
+              Instant.parse(createdAt)
+            )
+          )
+
+        case _ =>
+          Failure(new IllegalArgumentException(s"Can't decode conversion"))
+      }
 
   def resource(host: String, port: Int)(
       implicit L: LoggerFactory[IO]

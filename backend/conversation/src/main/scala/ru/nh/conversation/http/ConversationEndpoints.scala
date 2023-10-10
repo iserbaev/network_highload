@@ -33,10 +33,10 @@ class ConversationEndpoints(
             conversationService
               .createConversation(UUID.fromString(auth.userId), params._1.some)
         }
-        .flatTap(
+        .flatTap { res =>
           messageService
-            .addPrivateMessage(UUID.fromString(auth.userId), params._1, _, params._2.text)
-        )
+            .addPrivateMessage(UUID.fromString(auth.userId), params._1, res, params._2.text)
+        }
         .attempt
         .flatTap(e => log.debug(s"Create conversation result $e"))
         .map {
@@ -56,7 +56,9 @@ class ConversationEndpoints(
             new NoSuchElementException(s"Conversation not found for (${UUID.fromString(auth.userId)}, $id)")
           )
         )
-        .flatMap(c => messageService.getPrivateMessages(c.id).tupleLeft(c))
+        .flatMap { c =>
+          messageService.getPrivateMessages(c.id).tupleLeft(c)
+        }
         .flatTap { case (conversation, _) =>
           log.debug(s"Received private conversation for (${auth.userId}, $id}) [$conversation]")
         }
