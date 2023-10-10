@@ -61,16 +61,25 @@ exports.add_dialog = function(req)
     log.info("Received dialog")
     log.info(dialog)
 
-    box.space.private_message_log:insert {
-        uuid.fromstr(dialog.conversation_id),
-        tonumber(dialog.conversation_index),
-        uuid.fromstr(dialog.message_from),
-        uuid.fromstr(dialog.message_to),
-        dialog.message,
-        datetime.new()
-    }
-    log.info("Dialog saved success")
+    result, err = pcall(function()
+        box.space.private_message_log:insert {
+            uuid.fromstr(dialog.conversation_id),
+            tonumber(dialog.conversation_index),
+            uuid.fromstr(dialog.message_from),
+            uuid.fromstr(dialog.message_to),
+            dialog.message,
+            datetime.new()
+        }
+    end)
 
+    if err ~= nil then
+        log.error(err)
+        local resp = req:render { json = err }
+        resp.status = 500
+        return resp
+    end
+
+    log.info("Dialog saved success")
     local resp = req:render { json = '{}' }
     resp.status = 201
     return resp
