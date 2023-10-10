@@ -43,6 +43,11 @@ box.once("schema", function()
         unique = true,
         parts = { { field = 'id', type = 'uuid' }, { field = 'participant', type = 'uuid' } }
     })
+    conversation:create_index('participants', {
+        type = 'TREE',
+        unique = true,
+        parts = { { field = 'participant', type = 'uuid' }, { field = 'private_conversation_participant', type = 'uuid', is_nullable = true } }
+    })
 
     -- private_message_log space migration
     --CREATE TABLE IF NOT EXISTS private_message_log
@@ -106,5 +111,6 @@ server:route({ path = '/dialogs/:conversation_id', method = 'GET' }, handlers.li
 server:route({ path = '/dialogs', method = 'GET' }, handlers.all_dialogs)
 server:route({ path = '/dialogs', method = 'POST' }, handlers.add_dialog)
 server:route({ path = '/conversation', method = 'POST' }, handlers.add_conversation)
+server:route({ path = '/conversation/:participant_id/:private_participant_id', method = 'GET' }, handlers.get_private_conversation)
 
 server:start()

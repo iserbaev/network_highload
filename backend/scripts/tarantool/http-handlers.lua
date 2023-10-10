@@ -16,11 +16,6 @@ exports.add_conversation = function(req)
         private_conversation_participant = uuid.fromstr(conversation.private_conversation_participant)
     end
 
-    --        { name = 'id', type = 'unsigned' },
-    --        { name = 'participant', type = 'unsigned' },
-    --        { name = 'private_conversation', type = 'boolean' },
-    --        { name = 'private_conversation_participant', type = 'unsigned' },
-    --        { name = 'created_at', type = 'datetime' }
     box.space.conversation:insert {
         uuid.new(),
         uuid.fromstr(conversation.participant),
@@ -36,13 +31,15 @@ exports.add_conversation = function(req)
     return resp
 end
 
-exports.get_conversation = function(req)
-    local conversation_id = req:stash('conversation_id')
-    log.info("Received request to list dialogs")
-    log.info(conversation_id)
-    local dialogs = box.space.private_message_log.index.primary:select(uuid.fromstr(conversation_id))
+exports.get_private_conversation = function(req)
+    local participant_id = req:stash('participant_id')
+    local private_participant_id = req:stash('private_participant_id')
+    log.info("Received request to get_private_conversation")
+    log.info(participant_id)
+    log.info(private_participant_id)
+    local conversation = box.space.conversation.index.participants:select({uuid.fromstr(participant_id), uuid.fromstr(private_participant_id)})
 
-    local resp = req:render({ json = dialogs })
+    local resp = req:render({ json = conversation })
     resp.status = 200
     return resp
 end
