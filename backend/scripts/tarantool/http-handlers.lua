@@ -16,13 +16,25 @@ exports.add_conversation = function(req)
         private_conversation_participant = uuid.fromstr(conversation.private_conversation_participant)
     end
 
+    local conversation_id = uuid.new()
+
     box.space.conversation:insert {
-        uuid.new(),
+        conversation_id,
         uuid.fromstr(conversation.participant),
         conversation.private_conversation,
         private_conversation_participant,
         datetime.new()
     }
+
+    if conversation.private_conversation then
+        box.space.conversation:insert {
+            conversation_id,
+            private_conversation_participant,
+            conversation.private_conversation,
+            uuid.fromstr(conversation.participant),
+            datetime.new()
+        }
+    end
 
     log.info("Conversation saved success")
 
