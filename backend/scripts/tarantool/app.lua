@@ -32,16 +32,16 @@ box.once("schema", function()
     --);
     conversation = box.schema.space.create('conversation', { if_not_exists = true })
     conversation:format({
-        { name = 'id', type = 'unsigned' },
-        { name = 'participant', type = 'unsigned' },
+        { name = 'id', type = 'uuid' },
+        { name = 'participant', type = 'uuid' },
         { name = 'private_conversation', type = 'boolean' },
-        { name = 'private_conversation_participant', type = 'unsigned' },
+        { name = 'private_conversation_participant', type = 'uuid', is_nullable = true },
         { name = 'created_at', type = 'datetime' }
     })
     conversation:create_index('primary', {
         type = 'TREE',
         unique = true,
-        parts = { { field = 'id', type = 'unsigned' }, { field = 'participant', type = 'unsigned' } }
+        parts = { { field = 'id', type = 'uuid' }, { field = 'participant', type = 'uuid' } }
     })
 
     -- private_message_log space migration
@@ -102,9 +102,9 @@ local server = require('http.server').new(nil, http_port, { charset = "utf8" }) 
 
 local handlers = require('http-handlers')
 
-server:route({ path = '/test' }, handlers.test_handler)
 server:route({ path = '/dialogs/:conversation_id', method = 'GET' }, handlers.list_dialogs)
 server:route({ path = '/dialogs', method = 'GET' }, handlers.all_dialogs)
 server:route({ path = '/dialogs', method = 'POST' }, handlers.add_dialog)
+server:route({ path = '/conversation', method = 'POST' }, handlers.add_conversation)
 
 server:start()
