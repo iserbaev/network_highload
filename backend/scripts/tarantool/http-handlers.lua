@@ -26,7 +26,7 @@ exports.add_conversation = function(req)
 
     log.info("Conversation saved success")
 
-    local resp = req:render { json = json.encode('{}') }
+    local resp = req:render { json = '{}' }
     resp.status = 201
     return resp
 end
@@ -59,7 +59,7 @@ exports.add_dialog = function(req)
     }
     log.info("Dialog saved success")
 
-    local resp = req:render { json = json.encode('{}')  }
+    local resp = req:render { json = '{}'  }
     resp.status = 201
     return resp
 end

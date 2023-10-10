@@ -32,16 +32,21 @@ box.once("schema", function()
     --);
     conversation = box.schema.space.create('conversation', { if_not_exists = true })
     conversation:format({
-        { name = 'id', type = 'unsigned' },
-        { name = 'participant', type = 'unsigned' },
+        { name = 'id', type = 'uuid' },
+        { name = 'participant', type = 'uuid' },
         { name = 'private_conversation', type = 'boolean' },
-        { name = 'private_conversation_participant', type = 'unsigned' },
+        { name = 'private_conversation_participant', type = 'uuid', is_nullable = true },
         { name = 'created_at', type = 'datetime' }
     })
     conversation:create_index('primary', {
         type = 'TREE',
         unique = true,
-        parts = { { field = 'id', type = 'unsigned' }, { field = 'participant', type = 'unsigned' } }
+        parts = { { field = 'id', type = 'uuid' }, { field = 'participant', type = 'uuid' } }
+    })
+    conversation:create_index('participants', {
+        type = 'TREE',
+        unique = true,
+        parts = { { field = 'participant', type = 'uuid' }, { field = 'private_conversation_participant', type = 'uuid', is_nullable = true } }
     })
 
     -- private_message_log space migration
@@ -57,19 +62,17 @@ box.once("schema", function()
     --);
     private_message_log = box.schema.space.create('private_message_log', { if_not_exists = true })
     private_message_log:format({
-        { name = 'conversation_id', type = 'unsigned' },
+        { name = 'conversation_id', type = 'uuid' },
         { name = 'conversation_index', type = 'integer' },
-        { name = 'message_from', type = 'unsigned' },
-        { name = 'message_to', type = 'unsigned' },
+        { name = 'message_from', type = 'uuid' },
+        { name = 'message_to', type = 'uuid' },
         { name = 'message', type = 'string' },
         { name = 'created_at', type = 'datetime' }
     })
-    box.schema.sequence.create('private_conversation_index_seq', { if_not_exists = true })
     private_message_log:create_index('primary', {
         type = 'TREE',
         unique = true,
-        sequence = 'private_conversation_index_seq',
-        parts = { { field = 'conversation_id', type = 'unsigned' }, { field = 'conversation_index', type = 'integer', }, { field = 'message_from', type = 'unsigned' } }
+        parts = { { field = 'conversation_id', type = 'uuid' }, { field = 'conversation_index', type = 'integer' }, { field = 'message_from', type = 'uuid' } }
     })
 
     --CREATE TABLE IF NOT EXISTS group_message_log
@@ -83,18 +86,16 @@ box.once("schema", function()
     --);
     group_message_log = box.schema.space.create('group_message_log', { if_not_exists = true })
     group_message_log:format({
-        { name = 'conversation_id', type = 'unsigned' },
+        { name = 'conversation_id', type = 'uuid' },
         { name = 'conversation_index', type = 'integer' },
-        { name = 'sender', type = 'unsigned' },
+        { name = 'sender', type = 'uuid' },
         { name = 'message', type = 'string' },
         { name = 'created_at', type = 'datetime' }
     })
-    box.schema.sequence.create('group_conversation_index_seq', { if_not_exists = true })
     group_message_log:create_index('primary', {
         type = 'TREE',
         unique = true,
-        sequence = 'group_conversation_index_seq',
-        parts = { { field = 'conversation_id', type = 'unsigned' }, { field = 'conversation_index', type = 'integer', }, { field = 'sender', type = 'unsigned' } }
+        parts = { { field = 'conversation_id', type = 'uuid' }, { field = 'conversation_index', type = 'integer', }, { field = 'sender', type = 'uuid' } }
     })
 
     print('box.once executed on slave')
@@ -106,6 +107,10 @@ local server = require('http.server').new(nil, http_port, { charset = "utf8" }) 
 
 local handlers = require('http-handlers')
 
-server:route({ path = '/test' }, handlers.test_handler)
+server:route({ path = '/dialogs/:conversation_id', method = 'GET' }, handlers.list_dialogs)
+server:route({ path = '/dialogs', method = 'GET' }, handlers.all_dialogs)
+server:route({ path = '/dialogs', method = 'POST' }, handlers.add_dialog)
+server:route({ path = '/conversation', method = 'POST' }, handlers.add_conversation)
+server:route({ path = '/conversation/:participant_id/:private_participant_id', method = 'GET' }, handlers.get_private_conversation)
 
 server:start()
