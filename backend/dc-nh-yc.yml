@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   nh-user:
-    image: cr.yandex/crpd5q7b07g01gbmpiom/nh-user:0.0.2-SNAPSHOT
+    image: cr.yandex/crpd5q7b07g01gbmpiom/nh-user:0.0.3-SNAPSHOT-9e832ac6
     environment:
       NH_POSTGRES_JOB_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com::5432/nh_user"
       NH_POSTGRES_DB_USERNAME: "postgres"

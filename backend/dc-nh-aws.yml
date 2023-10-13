@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   nh-auth:
-    image: public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-22fbd12b
+    image: public.ecr.aws/v3c4w4q9/nh-auth:0.0.3-SNAPSHOT-9e832ac6
     environment:
       NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/auth"
       NH_READ_POSTGRES_DB_USERNAME: "postgres"
@@ -14,7 +14,7 @@ services:
       - "8088:8088"
     command: [ "server", "--force-migrate"]
   nh-user:
-    image: public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-22fbd12b
+    image: public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-9e832ac6
     environment:
       NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/nh_user"
       NH_READ_POSTGRES_DB_USERNAME: "postgres"
@@ -27,7 +27,7 @@ services:
       - "8081:8081"
     command: [ "server", "--force-migrate"]
   nh-conversation:
-    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-22fbd12b
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-9e832ac6
     environment:
       NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/conversation"
       NH_READ_POSTGRES_DB_USERNAME: "postgres"
@@ -40,7 +40,7 @@ services:
       - "8082:8082"
     command: [ "server", "--force-migrate"]
   nh-post:
-    image: public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-22fbd12b
+    image: public.ecr.aws/v3c4w4q9/nh-post:0.0.3-SNAPSHOT-9e832ac6
     environment:
       NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/post"
       NH_READ_POSTGRES_DB_USERNAME: "postgres"

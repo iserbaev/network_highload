@@ -1,0 +1,7 @@
+version: '3.7'
+services:
+  backend:
+    image: nginxdemos/nginx-hello
+    container_name: ucarp-backend-1
+    restart: "always"
+    network_mode: "host"

@@ -1,0 +1,9 @@
+version: '3.7'
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: nginx-ucarp-lb
+    restart: "always"
+    network_mode: "host"

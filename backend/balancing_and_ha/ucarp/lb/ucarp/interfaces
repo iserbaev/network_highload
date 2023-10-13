@@ -1,0 +1,30 @@
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet static
+  address 10.10.8.20
+  netmask 255.255.255.0
+
+  #########################
+  # ucarp configuration
+  #########################
+  # vid : The ID of the virtual server [1-255]
+  ucarp-vid 1
+  # vip : The virtual address
+  ucarp-vip 10.10.8.10
+  # password : A password used to encrypt Carp communications
+  ucarp-password secret
+  # advskew : Advertisement skew [1-255]
+  ucarp-advskew 100
+  # advbase : Interval in seconds that advertisements will occur
+  ucarp-advbase 1
+  # master : determine if this server is the master
+  ucarp-master yes
+
+# The carp network interface, on top of eth0
+iface eth0:ucarp inet static
+  address 10.10.8.10
+  netmask 255.255.255.0
