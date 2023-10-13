@@ -1,0 +1,58 @@
+version: '3.7'
+services:
+  nginx:
+    image: nginx:1.21
+    container_name: nginx-lb
+    restart: on-failure
+    networks:
+      - otus-nginx-demo
+    volumes:
+      - "./scripts/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+    ports:
+      - "80:80"
+      - "8082:8082"
+
+  backend-1:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-645cad25
+    container_name: backend-1
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5433/conversation"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/conversation"
+      NH_AUTH_HOST: "host.docker.internal"
+    ports:
+      - "8082"
+    command: server --force-migrate
+    networks:
+      - otus-nginx-demo
+
+  backend-2:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-645cad25
+    container_name: backend-2
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5433/conversation"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/conversation"
+      NH_AUTH_HOST: "host.docker.internal"
+    ports:
+      - "8082"
+    command: server --force-migrate
+    networks:
+      - otus-nginx-demo
+
+  backend-3:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-645cad25
+    container_name: backend-3
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5433/conversation"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/conversation"
+      NH_AUTH_HOST: "host.docker.internal"
+    ports:
+      - "8082"
+    command: server --force-migrate
+    networks:
+      - otus-nginx-demo
+
+networks:
+  otus-nginx-demo:
+    external: true
+
+#docker-compose -p nh -f dc-nh-nginx.yml up -d
