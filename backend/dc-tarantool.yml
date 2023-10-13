@@ -38,5 +38,7 @@ services:
       - 38080:8080
 
 # docker-compose -p nh -f dc-tarantool.yml up -d
+# docker logs -f nh_tt3_1
+
 # docker rm -f nh_tt1_1 nh_tt2_1 nh_tt3_1
 # docker volume prune

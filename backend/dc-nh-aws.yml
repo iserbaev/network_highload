@@ -16,10 +16,10 @@ services:
   nh-user:
     image: public.ecr.aws/v3c4w4q9/nh-user:0.0.3-SNAPSHOT-22fbd12b
     environment:
-      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/network_highload"
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/nh_user"
       NH_READ_POSTGRES_DB_USERNAME: "postgres"
       NH_READ_POSTGRES_DB_PASSWORD: "xxx"
-      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/network_highload"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://postgres.cvcljbywqm5j.eu-central-1.rds.amazonaws.com:5432/nh_user"
       NH_WRITE_POSTGRES_DB_USERNAME: "postgres"
       NH_WRITE_POSTGRES_DB_PASSWORD: "xxx"
       NH_AUTH_HOST: "172.31.36.147"
