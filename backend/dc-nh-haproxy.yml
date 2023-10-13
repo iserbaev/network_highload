@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  haproxy:
+    image: haproxy
+    ports:
+      - "5432:5432"
+      - "5433:5433"
+    restart: unless-stopped
+    volumes:
+      - "./scripts/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg"
+
+#docker-compose -p nh -f dc-nh-haproxy.yml up -d
