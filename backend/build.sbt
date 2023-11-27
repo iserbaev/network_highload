@@ -299,8 +299,8 @@ lazy val digitalWallet = Project(id = "digital_wallet", base = file("digital_wal
 
 lazy val root = Project(id = "network-highload-all", base = file("."))
   .enablePlugins(GitBranchPrompt, JavaAppPackaging)
-  .aggregate(api, core, auth, user, conversation, post)
-  .dependsOn(auth, user, conversation, post)
+  .aggregate(api, core, auth, user, conversation, post, digitalWallet)
+  .dependsOn(auth, user, conversation, post, digitalWallet)
   .settings(
     Compile / discoveredMainClasses := Seq("ru.nh.user.cli.UserServiceCli"),
     Compile / discoveredMainClasses ++= Seq("ru.nh.conversation.cli.ConversationServiceCli"),
