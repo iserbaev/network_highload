@@ -259,6 +259,44 @@ lazy val user = Project(id = "user", base = file("user"))
     ),
   )
 
+lazy val digitalWallet = Project(id = "digital_wallet", base = file("digital_wallet"))
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging)
+  .dependsOn(core)
+  .settings(
+    commonSettings,
+    buildInfoKeys := Seq[BuildInfoKey](
+      name,
+      version,
+      scalaVersion,
+      sbtVersion,
+      BuildInfoKey.map(git.gitCurrentBranch) { case (_, branch) =>
+        "gitBranch" -> branch
+      },
+      BuildInfoKey.map(git.gitHeadCommit) { case (_, sha) =>
+        "gitCommit" -> sha.orNull
+      }
+    ),
+    buildInfoPackage := "ru.nh.user.cli",
+    buildInfoOptions ++= Seq(
+      BuildInfoOption.BuildTime,
+      BuildInfoOption.ToJson
+    ),
+    Compile / run / fork := true,
+    Compile / run / javaOptions ++= Seq(
+      "-Dconfig.file=../src/universal/conf/application.conf",
+      "-Dlogback.configurationFile=../src/universal/conf/logback.xml"
+    ),
+    libraryDependencies ++= Dependencies.userDeps.value,
+    libraryDependencies ++= Dependencies.commonTest.value,
+    Compile / mainClass  := Some("ru.nh.user.cli.DigitalWalletServiceCli"),
+    executableScriptName := "digital-wallet-service-cli",
+    dockerSettings("digital-wallet", 8033),
+    bashScriptExtraDefines ++= Seq(
+      """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml""""
+    ),
+  )
+
 lazy val root = Project(id = "network-highload-all", base = file("."))
   .enablePlugins(GitBranchPrompt, JavaAppPackaging)
   .aggregate(api, core, auth, user, conversation, post)
