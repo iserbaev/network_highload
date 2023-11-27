@@ -1,7 +1,7 @@
 import DockerConfig.dockerSettings
-import com.typesafe.sbt.packager.MappingsHelper.directory
-import sbtrelease.*
-import sbtwelcome.*
+import sbtrelease._
+import com.typesafe.tools.mima.core._
+import org.typelevel.scalacoptions.ScalacOptions
 
 lazy val customLogo =
   s"""
@@ -25,15 +25,7 @@ lazy val customLogo =
      |
      |""".stripMargin
 
-lazy val cliTasks = Seq(
-  UsefulTask("prePush", "Runs all commands that need to be executed before push"),
-  UsefulTask("allCompile", "Compile all scala files in project"),
-  UsefulTask("allScalafix", "Run 'scalafix' on the entire project"),
-  UsefulTask("allScalafmt", "Run 'scalafmt' on the entire project"),
-  UsefulTask("allTest", "Run all tests"),
-  UsefulTask("scalafmtSbt", "Run scalafmt on the sbt files in project"),
-  UsefulTask("versionPolicyCheck", "Check current backward and source compatibility state"),
-)
+Global / lintUnusedKeysOnLoad := false
 
 addCommandAlias("scalafixCheck", "scalafix --check")
 addCommandAlias("scalafixCheckAll", "scalafixAll --check")
@@ -310,7 +302,6 @@ lazy val root = Project(id = "network-highload-all", base = file("."))
     publishLocal   := {},
     publish / skip := true,
     logo           := customLogo,
-    usefulTasks    := cliTasks,
     // Configure releaseVersion to bump the patch, minor, or major version number according
     // to the compatibility intention set by versionPolicyIntention.
     releaseVersion := releaseSetVersionTo(versionPolicyIntention.value),
