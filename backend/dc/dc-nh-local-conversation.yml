@@ -1,0 +1,36 @@
+version: '3.5'
+
+services:
+  nh-conversation-1:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-645cad25
+    container_name: nh-conversation-1
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5433/conversation"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/conversation"
+      NH_AUTH_HOST: "host.docker.internal"
+    ports:
+      - "8082"
+    command: server --force-migrate
+
+  nh-conversation-2:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-645cad25
+    container_name: nh-conversation-2
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5433/conversation"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/conversation"
+      NH_AUTH_HOST: "host.docker.internal"
+    ports:
+      - "8082"
+    command: server --force-migrate
+
+  nh-conversation-3:
+    image: public.ecr.aws/v3c4w4q9/nh-conversation:0.0.3-SNAPSHOT-645cad25
+    container_name: nh-conversation-3
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5433/conversation"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/conversation"
+      NH_AUTH_HOST: "host.docker.internal"
+    ports:
+      - "8082"
+    command: server --force-migrate
+#docker-compose -f dc-nh-local-conversation.yml up -d
