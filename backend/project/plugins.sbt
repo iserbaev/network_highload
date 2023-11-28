@@ -16,8 +16,8 @@ addSbtPlugin("org.scalameta"                     % "sbt-mdoc"                  %
 addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"              % "2.5.2")
 addSbtPlugin("pl.project13.scala"                % "sbt-jmh"                   % "0.4.6")
 
-addSbtPlugin("com.eed3si9n"                      % "sbt-buildinfo"             % "0.11.0")
-addSbtPlugin("com.github.sbt"                    % "sbt-native-packager"       % "1.9.9")
+addSbtPlugin("com.eed3si9n"   % "sbt-buildinfo"       % "0.11.0")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.9")
 
 // sbt dependencyBrowseTreeHTML - will generate dependency tree in html/json formats
 addDependencyTreePlugin

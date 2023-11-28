@@ -7,9 +7,8 @@ import fs2.concurrent.Channel
 import org.typelevel.log4cats.{ Logger, LoggerFactory }
 import ru.nh.PostService.PostFeed
 import ru.nh._
-import ru.nh.events.EventManager
-import ru.nh.events.EventManager.UserPosts
 import ru.nh.post.PostAccessor.PostRow
+import ru.nh.user.event.UserPosts
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
@@ -76,7 +75,7 @@ object PostManager {
           L.fromClass(classOf[PostManager])
             .flatTap(_.info(s"Allocating PostManager with ${accessor} store."))
         },
-      EventManager.userPosts(accessor, 5.seconds, 100),
+      UserPosts(accessor, 5.seconds, 10.minutes, 100),
       Supervisor[IO]
     )
       .mapN { (log, em, s) =>

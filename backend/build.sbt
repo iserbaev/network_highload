@@ -51,7 +51,6 @@ lazy val commonSettings = Seq(
 
 inThisBuild(
   Seq(
-    organization  := "ru.kryptonite.libs",
     versionScheme := Some("semver-spec"),
     scalaVersion  := Dependencies.Versions.Scala213,
     javacOptions ++= Seq(
