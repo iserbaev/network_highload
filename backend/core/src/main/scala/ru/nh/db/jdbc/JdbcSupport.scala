@@ -30,7 +30,8 @@ object JdbcSupport extends JdbcSupport {
       connectionMaxLifetime: Option[FiniteDuration],
       leakDetectionThreshold: Option[FiniteDuration],
       socketTimeout: Option[FiniteDuration],
-      keepAliveTimeout: Option[FiniteDuration]
+      keepAliveTimeout: Option[FiniteDuration],
+      autoCommit: Boolean
   )
 
   implicit val PoolConfigReader: ConfigReader[PoolConfig]             = deriveReader[PoolConfig]
@@ -112,6 +113,8 @@ trait JdbcSupport extends FlywaySupport {
     }
 
     conf.setPoolName(poolName)
+
+    conf.setAutoCommit(pool.autoCommit)
 
     conf.setDriverClassName(connection.jdbcDriverName)
     conf.setJdbcUrl(connection.jdbcUrl)
