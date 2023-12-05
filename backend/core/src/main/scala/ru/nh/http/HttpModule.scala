@@ -2,10 +2,8 @@ package ru.nh.http
 
 import cats.data.NonEmptyList
 import cats.effect.{ IO, Resource }
-import io.netty.channel.ChannelOption
 import org.http4s.HttpRoutes
-import org.http4s.netty.NettyChannelOptions
-import org.http4s.netty.server.NettyServerBuilder
+import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.server.Server
 import org.http4s.server.defaults.{ IdleTimeout, ResponseTimeout }
 import org.typelevel.log4cats.LoggerFactory
@@ -15,7 +13,7 @@ import sttp.tapir.server.http4s.{ Http4sServerInterpreter, Http4sServerOptions }
 import sttp.tapir.swagger.SwaggerUIOptions
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration._
 
 trait HttpModule {
   def config: Config
@@ -42,7 +40,8 @@ object HttpModule {
       cfg: Config,
       endpoints: NonEmptyList[SEndpoint],
       metricsModule: MetricsModule,
-      title: String
+      title: String,
+      healthCheck: IO[Unit]
   )(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, HttpModule] = {
@@ -58,20 +57,17 @@ object HttpModule {
         .options
     }
     val serverRoutes = serverInterpreter.toRoutes(
-      metricsModule.pullEndpoint :: swagger ::: logic.toList
+      healthCheckRoute(healthCheck, 10.seconds) :: metricsModule.pullEndpoint :: swagger ::: logic.toList
     )
 
     val idleTimeout           = cfg.server.idleTimeout.getOrElse(IdleTimeout)
     val responseHeaderTimeout = cfg.server.responseHeaderTimeout.getOrElse(ResponseTimeout)
 
-    NettyServerBuilder[IO]
+    BlazeServerBuilder[IO]
       .bindHttp(cfg.server.port, cfg.server.host)
       .withIdleTimeout(FiniteDuration(idleTimeout.length, idleTimeout.unit))
-      .withNettyChannelOptions(
-        NettyChannelOptions.empty
-          .append[Integer](ChannelOption.CONNECT_TIMEOUT_MILLIS, responseHeaderTimeout.toMillis.toInt)
-          .append[java.lang.Boolean](ChannelOption.SO_KEEPALIVE, cfg.server.useKeepAlive)
-      )
+      .withSocketKeepAlive(cfg.server.useKeepAlive)
+      .withResponseHeaderTimeout(responseHeaderTimeout)
       .withHttpApp(serverRoutes.orNotFound)
       .resource
       .evalTap(_ => log.info(s"Run http $title server on ${cfg.server.host}:${cfg.server.port}"))

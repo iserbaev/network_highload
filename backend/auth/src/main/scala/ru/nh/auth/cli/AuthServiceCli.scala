@@ -59,7 +59,7 @@ object AuthCli {
             .flatMap { case (m, pg) =>
               AuthModule.resource(pg, config.auth.key).flatMap { auth =>
                 HttpModule
-                  .resource(config.http, auth.endpoints, m, "auth")
+                  .resource(config.http, auth.endpoints, m, "auth", pg.healthCheck)
               }
 
             }

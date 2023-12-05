@@ -11,6 +11,8 @@ import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.{ PartialServerEndpoint, ServerEndpoint }
 import sttp.tapir.{ Endpoint, EndpointInput, endpoint, header, statusCode }
 
+import scala.concurrent.duration.FiniteDuration
+
 package object http {
   import json.all._
   import tapirImplicits._
@@ -50,4 +52,25 @@ package object http {
           }
         }
     )
+
+  def healthCheckRoute(checks: IO[Unit], timeout: FiniteDuration): SEndpoint = {
+    val resource: String                  = "healthz"
+    val resourcePath: EndpointInput[Unit] = resource
+    val description = endpoint
+      .in(resourcePath)
+      .tag(resource)
+      .errorOut(statusCode)
+      .out(statusCode)
+
+    description.serverLogic { _ =>
+      checks.timeout(timeout).attempt.map {
+        _.leftMap {
+          case _: IllegalArgumentException => StatusCode.BadRequest
+          case _                           => StatusCode.InternalServerError
+        }.flatMap { _ =>
+          StatusCode.Ok.asRight
+        }
+      }
+    }
+  }
 }

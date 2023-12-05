@@ -63,7 +63,7 @@ object PostCli {
                   .resource(clientsConfig, pg, auth)
                   .flatMap(postModule =>
                     HttpModule
-                      .resource(serverConfig.http, postModule.endpoints, m, "post")
+                      .resource(serverConfig.http, postModule.endpoints, m, "post", pg.healthCheck)
                   )
               }
 

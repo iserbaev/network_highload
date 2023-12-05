@@ -59,13 +59,13 @@ object ConversationCli {
             .prometheus(CollectorRegistry.defaultRegistry, config.metrics)
             .flatMap(m => PostgresModule(config.db, m.metricsFactory).tupleLeft(m))
             .flatMap(t => TarantoolModule.resource(tarantoolConfig).tupleLeft(t))
-            .flatMap { case ((m, _), tt) =>
+            .flatMap { case ((m, pg), tt) =>
               AuthClient.resource(config.auth.host, config.auth.port).flatMap { auth =>
                 ConversationModule
                   .tarantool(tt, auth)
                   .flatMap(conversationModule =>
                     HttpModule
-                      .resource(config.http, conversationModule.endpoints, m, "conversation")
+                      .resource(config.http, conversationModule.endpoints, m, "conversation", pg.healthCheck)
                   )
               }
 

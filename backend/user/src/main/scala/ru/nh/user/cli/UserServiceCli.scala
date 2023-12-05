@@ -72,7 +72,7 @@ object UserCli {
             a <- AuthClient.resource(config.auth.host, config.auth.port)
             n <- Neo4JModule(neo4jConfig)
             u <- UserModule(p, n, a, config.auth.key)
-            _ <- HttpModule.resource(config.http, u.endpoints, m, "user")
+            _ <- HttpModule.resource(config.http, u.endpoints, m, "user", p.healthCheck)
             _ <- Resource.eval(populateProgram(u.accessor))
           } yield ()
 

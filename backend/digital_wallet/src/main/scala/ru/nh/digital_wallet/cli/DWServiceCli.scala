@@ -63,7 +63,7 @@ object DWCli {
                   .resource(pg, auth)
                   .flatMap { dWModule =>
                     HttpModule
-                      .resource(serverConfig.http, dWModule.endpoints, m, "digital_wallet")
+                      .resource(serverConfig.http, dWModule.endpoints, m, "digital_wallet", pg.healthCheck)
                   }
               }
 
