@@ -16,6 +16,7 @@ class DWEndpoints(
 )(
     implicit L: LoggerFactory[IO]
 ) extends SseSupport {
+  import ru.nh.digital_wallet.DWJson._
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[DWEndpoints])
 

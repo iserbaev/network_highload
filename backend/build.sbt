@@ -267,7 +267,7 @@ lazy val digitalWallet = Project(id = "digital_wallet", base = file("digital_wal
         "gitCommit" -> sha.orNull
       }
     ),
-    buildInfoPackage := "ru.nh.user.cli",
+    buildInfoPackage := "ru.nh.digital_wallet.cli",
     buildInfoOptions ++= Seq(
       BuildInfoOption.BuildTime,
       BuildInfoOption.ToJson
