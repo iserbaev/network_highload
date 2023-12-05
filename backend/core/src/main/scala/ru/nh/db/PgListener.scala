@@ -1,4 +1,4 @@
-package ru.nh.events
+package ru.nh.db
 
 import cats.effect._
 import cats.syntax.all._
