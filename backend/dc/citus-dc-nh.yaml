@@ -34,4 +34,4 @@ services:
 volumes:
   healthcheck-volume:
 
-#docker-compose -p nh -f citus-dc.yaml up -d
+#docker-compose -p nh -f citus-dc-nh.yaml up -d
