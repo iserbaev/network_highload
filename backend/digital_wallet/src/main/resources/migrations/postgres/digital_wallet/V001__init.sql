@@ -1,4 +1,4 @@
-CREATE SEQUENCE change_index_seq CYCLE;
+CREATE SEQUENCE IF NOT EXISTS change_index_seq CYCLE;
 
 CREATE TABLE IF NOT EXISTS balance_commands_log
 (
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS balance_events_log
         PRIMARY KEY (account_id, transaction_id, mint_change, spend_change)
 );
 
-create table if not exists balance_snapshot
+CREATE TABLE IF NOT EXISTS balance_snapshot
 (
     account_id                VARCHAR(64)                            NOT NULL,
     last_balance_change_index BIGINT                                 NOT NULL,
