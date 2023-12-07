@@ -6,37 +6,26 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres._
 import fs2.Stream
+import io.circe.Decoder
 import org.postgresql._
 import org.typelevel.log4cats.Logger
 import ru.nh.db.transactors.ReadWriteTransactors
 
-class PgListener private (channelName: String) {
-  import PgListener._
-
-  /** A resource that listens on a channel and unlistens when we're done. */
-  def channel: Resource[ConnectionIO, Unit] =
-    Resource.make(startListen)(_ => stopListen)
-
-  def startListen: ConnectionIO[Unit] =
-    PHC.pgListen(channelName) *> HC.commit
-
-  def stopListen: ConnectionIO[Unit] =
-    PHC.pgUnlisten(channelName) *> HC.commit
-
-  /** Stream of PGNotifications on the specified channel, for polling at the specified
-    * rate. Note that this stream, when run, will commit the current transaction.
-    */
-  def pgNotificationStream: Stream[ConnectionIO, PGNotification] =
+class PgListener[E: Decoder](rw: ReadWriteTransactors[IO]) {
+  private def pgNotificationStream: Stream[ConnectionIO, PGNotification] =
     Stream.evalSeq(PHC.pgGetNotifications <* HC.commit)
 
-  def notificationStream: Stream[ConnectionIO, String] =
+  private def notificationStream: Stream[ConnectionIO, String] =
     pgNotificationStream
       .mapChunks(_.map(_.getParameter))
 
-  def decodedNotificationStream: Stream[ConnectionIO, ChannelMessage] =
+  private def decodedNotificationStream: Stream[ConnectionIO, E] =
     notificationStream.flatMap { s =>
-      Stream.fromEither[ConnectionIO](io.circe.parser.decode[ChannelMessage](s))
+      Stream.fromEither[ConnectionIO](io.circe.parser.decode[E](s))
     }
+
+  def listen(): Stream[IO, E] =
+    decodedNotificationStream.transact(rw.readXA.xa)
 }
 
 object PgListener {
@@ -49,11 +38,26 @@ object PgListener {
         eventRow <- c.downField("event").as[Option[String]]
       } yield ChannelMessage(cmdRow, eventRow)
   }
-  def apply(channelName: String): PgListener =
-    new PgListener(channelName)
 
-  def channelResource(channelName: String, rw: ReadWriteTransactors[IO])(
-      implicit logger: Logger[IO]
-  ): Resource[IO, Unit] =
-    PgListener(channelName).channel.mapK[IO](rw.readXA.readK)
+  private[nh] def channelResource(channelName: String): Resource[ConnectionIO, Unit] =
+    Resource
+      .make(startListen(channelName))(_ => stopListen(channelName))
+
+  private[nh] def startListen(channelName: String): ConnectionIO[Unit] =
+    PHC.pgListen(channelName) *> HC.commit
+
+  private[nh] def stopListen(channelName: String): ConnectionIO[Unit] =
+    PHC.pgUnlisten(channelName) *> HC.commit
+
+  def resource[E: Decoder](
+      channelName: String,
+      rw: ReadWriteTransactors[IO]
+  )(implicit log: Logger[IO]): Resource[IO, PgListener[E]] =
+    channelResource(channelName).mapK(rw.readXA.readK).as(new PgListener[E](rw))
+
+  def channelEvents(
+      channelName: String,
+      rw: ReadWriteTransactors[IO]
+  )(implicit log: Logger[IO]): Resource[IO, PgListener[ChannelMessage]] =
+    resource[ChannelMessage](channelName, rw)
 }

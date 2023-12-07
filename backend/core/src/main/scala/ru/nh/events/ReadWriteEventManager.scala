@@ -1,9 +1,10 @@
 package ru.nh.events
 
+import cats.NonEmptyTraverse
 import cats.data.Chain
 import cats.effect.IO
 import cats.effect.std.Queue
-import cats.syntax.traverse._
+import cats.syntax.all._
 import fs2.{ Chunk, Stream }
 
 import scala.concurrent.duration.FiniteDuration
@@ -38,14 +39,14 @@ abstract class ReadWriteEventManager[A, K, E] extends ReadEventManager[K, E] {
   def publishRecorded(event: E, resend: Boolean): IO[Unit] =
     apiQueue.offer(event) <* buffer.updateState(buildTopicEvent(event), resend)
 
-  def publishBatch(values: Chain[(K, A)]): IO[Chain[E]] =
-    values
-      .traverse { case (key, value) => store.recordValueToEventLog(key, value) }
-      .semiflatTap(publishRecordedBatch(_, resend = false))
-      .getOrElse(Chain.empty)
+  def publishBatch[R[_]: NonEmptyTraverse](values: R[(K, A)]): IO[Vector[E]] =
+    store
+      .recordValuesBatch(values)
+      .flatTap(publishRecordedBatch(_, resend = false))
 
-  def publishRecordedBatch(events: Chain[E], resend: Boolean): IO[Unit] =
-    apiQueue.tryOfferN(events.toList).void <* buffer.batchUpdateState(events.map(buildTopicEvent), resend)
+  def publishRecordedBatch(events: Vector[E], resend: Boolean): IO[Unit] =
+    events.traverse_(apiQueue.tryOffer) <*
+      buffer.batchUpdateState(Chain.fromIterableOnce(events.map(buildTopicEvent)), resend)
 
   protected def streamApiQueueUpdates: Stream[IO, E] =
     Stream

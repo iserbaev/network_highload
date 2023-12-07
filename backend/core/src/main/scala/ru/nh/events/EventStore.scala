@@ -18,4 +18,5 @@ trait ReadEventStore[F[_], K, E] {
 
 trait ReadWriteEventStore[F[_], A, K, E] extends ReadEventStore[F, K, E] {
   def recordValueToEventLog(key: K, value: A): OptionT[IO, E]
+  def recordValuesBatch[R[_]: NonEmptyTraverse](values: R[(K, A)]): IO[Vector[E]]
 }

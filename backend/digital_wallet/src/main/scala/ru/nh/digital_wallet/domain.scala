@@ -10,19 +10,21 @@ final case class TransferCommand(
     currencyType: String,
     transactionId: UUID
 ) {
-  def fromEvent: TransferEvent =
+  def fromEvent(index: Long): TransferEvent =
     TransferEvent(
       accountId = fromAccount,
       transactionId = transactionId,
+      changeIndex = index,
       mint = None,
       spend = Some(amount),
       description = s"Spend $amount from [$fromAccount] to [$toAccount] according to $transactionId"
     )
 
-  def toEvent: TransferEvent =
+  def toEvent(index: Long): TransferEvent =
     TransferEvent(
       accountId = fromAccount,
       transactionId = transactionId,
+      changeIndex = index,
       mint = Some(amount),
       spend = None,
       description = s"Mint $amount to [$toAccount] from [$fromAccount] according to $transactionId"
@@ -39,13 +41,14 @@ final case class TransferEvent(
     transactionId: UUID,
     mint: Option[Int],
     spend: Option[Int],
-    description: String
+    description: String,
+    changeIndex: Long,
 )
 
 final case class BalanceSnapshot(
     accountId: String,
+    lastChangeIndex: Long,
     mintSum: Int,
     spendSum: Int,
-    lastChangeIndex: Int,
     lastModifiedAt: Instant
 )

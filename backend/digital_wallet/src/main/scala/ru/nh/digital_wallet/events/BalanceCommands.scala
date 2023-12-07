@@ -1,0 +1,74 @@
+package ru.nh.digital_wallet.events
+
+import cats.effect.IO
+import cats.effect.kernel.Resource
+import cats.effect.std.Queue
+import cats.syntax.all._
+import org.typelevel.log4cats.LoggerFactory
+import ru.nh.db.PgListener
+import ru.nh.digital_wallet.BalanceAccessor.BalanceCommandLogRow
+import ru.nh.digital_wallet.events.store.BalanceCommandsStore
+import ru.nh.digital_wallet.{ BalanceAccessor, TransferCommand }
+import ru.nh.events.{ EventBuffer, ReadEventManager, ReadWriteEventManager }
+
+import java.util.UUID
+import scala.concurrent.duration.FiniteDuration
+
+class BalanceCommands(
+    val store: BalanceCommandsStore,
+    val buffer: EventBuffer[UUID, BalanceCommandLogRow],
+    val dbQueue: Queue[IO, BalanceCommandLogRow],
+    val apiQueue: Queue[IO, BalanceCommandLogRow]
+) extends ReadWriteEventManager[TransferCommand, UUID, BalanceCommandLogRow] {
+  protected def buildTopicEvent(event: BalanceCommandLogRow): EventBuffer.TopicEvent[UUID, BalanceCommandLogRow] =
+    EventBuffer.TopicEvent(
+      event.transactionId,
+      event,
+      completed = false,
+      event.changeIndex,
+      event.createdAt
+    )
+}
+
+object BalanceCommands {
+
+  def apply(
+      accessor: BalanceAccessor[IO],
+      tickInterval: FiniteDuration,
+      updatesChannelTick: FiniteDuration,
+      updatesChannelListener: PgListener[BalanceCommandLogRow],
+      limit: Int,
+  )(
+      implicit L: LoggerFactory[IO]
+  ): Resource[IO, BalanceCommands] =
+    (
+      Resource.eval(Queue.unbounded[IO, BalanceCommandLogRow]),
+      Resource.eval(Queue.unbounded[IO, BalanceCommandLogRow]),
+      EventBuffer.resource[UUID, BalanceCommandLogRow]
+    )
+      .flatMapN { (dbQueue, apiQueue, buffer) =>
+        val em = new BalanceCommands(BalanceCommandsStore(accessor), buffer, dbQueue, apiQueue)
+
+        val listenUpdates = ReadEventManager
+          .backgroundPeriodicTask(updatesChannelTick) {
+            updatesChannelListener
+              .listen()
+              .through(_.evalTap(dbQueue.offer))
+              .compile
+              .drain
+          }
+
+        val syncEventsFromQueues =
+          em.streamQueuesGrouped(limit, tickInterval)
+            .broadcastThrough(
+              em.bufferPipe(false)
+            )
+            .compile
+            .drain
+            .background
+            .void
+
+        listenUpdates *> syncEventsFromQueues
+          .as(em)
+      }
+}
