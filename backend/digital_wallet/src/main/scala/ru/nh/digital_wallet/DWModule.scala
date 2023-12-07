@@ -3,8 +3,8 @@ package ru.nh.digital_wallet
 import cats.data.NonEmptyList
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
-import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.noop.NoOpLogger
+import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
 import ru.nh.db.{ PgListener, PostgresModule }
 import ru.nh.digital_wallet.BalanceAccessor.{ BalanceCommandLogRow, BalanceEventLogRow }
 import ru.nh.digital_wallet.db.PostgresBalanceAccessor
@@ -45,34 +45,35 @@ object DWModule {
 
   def resource(config: Config, postgresModule: PostgresModule)(
       implicit L: LoggerFactory[IO]
-  ): Resource[IO, DWModule] =
+  ): Resource[IO, DWModule] = {
+    import BalanceCommandLogRow.balanceCommandLogSnakeCaseDecoder
+    import BalanceEventLogRow.balanceEventLogSnakeCaseDecoder
+    implicit val log: SelfAwareStructuredLogger[IO] = NoOpLogger[IO]
+
     (
-      PgListener.channelEvents(config.updatesChannel, postgresModule.rw)(NoOpLogger[IO]),
+      PgListener.channelEvents[BalanceCommandLogRow, BalanceEventLogRow](config.updatesChannel, postgresModule.rw),
       PostgresBalanceAccessor.resource(postgresModule.rw)
     ).flatMapN { (pgl, ba) =>
-      val be = BalanceEvents(
+      val bc = BalanceEvents(
         ba,
         config.updateTickInterval,
         config.updatesChannelTick,
-        () =>
-          pgl.listenFiltered(_.event.map(io.circe.parser.decode[BalanceEventLogRow])).flatMap(fs2.Stream.fromEither[IO](_)),
+        () => pgl.listenFiltered(_.event),
         config.defaultLimit,
         config.eventBufferTtl
+      ).flatMap(
+        BalanceCommands(
+          ba,
+          config.updateTickInterval,
+          config.updatesChannelTick,
+          () => pgl.listenFiltered(_.cmd),
+          config.defaultLimit,
+          config.eventBufferTtl,
+          _
+        )
       )
 
-      val bc = BalanceCommands(
-        ba,
-        config.updateTickInterval,
-        config.updatesChannelTick,
-        () =>
-          pgl
-            .listenFiltered(_.event.map(io.circe.parser.decode[BalanceCommandLogRow]))
-            .flatMap(fs2.Stream.fromEither[IO](_)),
-        config.defaultLimit,
-        config.eventBufferTtl
-      )
-
-      (be, bc).flatMapN(WalletService.resource(_, _, ba)).map { ws =>
+      bc.flatMap(WalletService.resource(_, ba)).map { ws =>
         new DWModule {
           val service: WalletService = ws
 
@@ -81,4 +82,5 @@ object DWModule {
       }
 
     }
+  }
 }

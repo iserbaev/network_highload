@@ -2,6 +2,7 @@ package ru.nh.digital_wallet
 
 import cats.NonEmptyTraverse
 import cats.data.OptionT
+import cats.syntax.all._
 import ru.nh.digital_wallet.BalanceAccessor.{ BalanceCommandLogRow, BalanceEventLogRow }
 
 import java.time.Instant
@@ -31,11 +32,30 @@ object BalanceAccessor {
       currencyType: String,
       changeIndex: Long,
       createdAt: Instant
-  )
+  ) {
+    def toEventFrom =
+      TransferEvent(
+        fromAccount,
+        transactionId,
+        none,
+        spend = amount.some,
+        s"Transfer from $fromAccount to $toAccount by $transactionId",
+        changeIndex
+      )
+    def toEventTo =
+      TransferEvent(
+        toAccount,
+        transactionId,
+        mint = amount.some,
+        none,
+        s"Transfer to $toAccount from $fromAccount by $transactionId",
+        changeIndex
+      )
+  }
   object BalanceCommandLogRow {
     implicit val balanceCommandLogSnakeCaseDecoder: Decoder[BalanceCommandLogRow] = (c: HCursor) =>
       for {
-        transactionId <- c.downField("transaction_id").as[UUID]
+        transactionId <- c.downField("transaction_id").as[String]
         accountIdFrom <- c.downField("account_id_from").as[String]
         accountIdTo   <- c.downField("account_id_to").as[String]
         amount        <- c.downField("amount").as[Int]
@@ -44,7 +64,7 @@ object BalanceAccessor {
         createdAt     <- c.downField("created_at").as[Instant]
       } yield {
         BalanceCommandLogRow(
-          transactionId,
+          UUID.fromString(transactionId),
           accountIdFrom,
           accountIdTo,
           amount,

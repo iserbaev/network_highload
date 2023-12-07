@@ -21,7 +21,13 @@ class PgListener[E: Decoder](rw: ReadWriteTransactors[IO]) {
 
   private def decodedNotificationStream: Stream[ConnectionIO, E] =
     notificationStream.flatMap { s =>
-      Stream.fromEither[ConnectionIO](io.circe.parser.decode[E](s))
+      io.circe.parser.decode[E](s) match {
+        case Left(value) =>
+          println(value)
+          Stream.empty
+        case Right(value) =>
+          Stream.emit(value)
+      }
     }
 
   def listen(): Stream[IO, E] =
@@ -33,12 +39,12 @@ class PgListener[E: Decoder](rw: ReadWriteTransactors[IO]) {
 
 object PgListener {
   import io.circe._
-  final case class ChannelMessage(cmd: Option[String], event: Option[String])
+  final case class ChannelMessage[C, E](cmd: Option[C], event: Option[E])
   object ChannelMessage {
-    implicit val decoder: Decoder[ChannelMessage] = (c: HCursor) =>
+    implicit def decoder[C: Decoder, E: Decoder]: Decoder[ChannelMessage[C, E]] = (c: HCursor) =>
       for {
-        cmdRow   <- c.downField("command").as[Option[String]]
-        eventRow <- c.downField("event").as[Option[String]]
+        cmdRow   <- c.downField("command").as[Option[C]]
+        eventRow <- c.downField("event").as[Option[E]]
       } yield ChannelMessage(cmdRow, eventRow)
   }
 
@@ -58,9 +64,9 @@ object PgListener {
   )(implicit log: Logger[IO]): Resource[IO, PgListener[E]] =
     channelResource(channelName).mapK(rw.readXA.readK).as(new PgListener[E](rw))
 
-  def channelEvents(
+  def channelEvents[C: Decoder, E: Decoder](
       channelName: String,
       rw: ReadWriteTransactors[IO]
-  )(implicit log: Logger[IO]): Resource[IO, PgListener[ChannelMessage]] =
-    resource[ChannelMessage](channelName, rw)
+  )(implicit log: Logger[IO]): Resource[IO, PgListener[ChannelMessage[C, E]]] =
+    resource[ChannelMessage[C, E]](channelName, rw)
 }

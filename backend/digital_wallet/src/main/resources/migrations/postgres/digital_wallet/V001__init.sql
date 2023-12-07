@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS balance_events_log
     change_index       BIGINT                                 NOT NULL,
     created_at         TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     CONSTRAINT "primary_balance_events_log"
-        PRIMARY KEY (account_id, transaction_id, mint_change, spend_change)
+        PRIMARY KEY (account_id, transaction_id)
 );
 
 CREATE TABLE IF NOT EXISTS balance_snapshot

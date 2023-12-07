@@ -17,7 +17,8 @@ class BalanceCommands(
     val store: BalanceCommandsStore,
     val buffer: EventBuffer[UUID, BalanceCommandLogRow],
     val dbQueue: Queue[IO, BalanceCommandLogRow],
-    val apiQueue: Queue[IO, BalanceCommandLogRow]
+    val apiQueue: Queue[IO, BalanceCommandLogRow],
+    val balanceEvents: BalanceEvents
 ) extends ReadWriteEventManager[TransferCommand, UUID, BalanceCommandLogRow] {
   protected def buildTopicEvent(event: BalanceCommandLogRow): EventBuffer.TopicEvent[UUID, BalanceCommandLogRow] =
     EventBuffer.TopicEvent(
@@ -27,6 +28,18 @@ class BalanceCommands(
       event.changeIndex,
       event.createdAt
     )
+
+  override def publishRecorded(event: BalanceCommandLogRow, resend: Boolean): IO[Unit] =
+    super.publishRecorded(event, resend) <*
+      balanceEvents.publish(event.fromAccount, event.toEventFrom) <*
+      balanceEvents.publish(event.toAccount, event.toEventTo)
+
+  private def publishEvents(cmd: BalanceCommandLogRow) =
+    balanceEvents.publish(cmd.fromAccount, cmd.toEventFrom) <*
+      balanceEvents.publish(cmd.toAccount, cmd.toEventTo)
+
+  override def publishRecordedBatch(events: Vector[BalanceCommandLogRow], resend: Boolean): IO[Unit] =
+    super.publishRecordedBatch(events, resend) <* events.traverse_(publishEvents)
 }
 
 object BalanceCommands {
@@ -37,7 +50,8 @@ object BalanceCommands {
       updatesChannelTick: FiniteDuration,
       updatesChannelListener: () => fs2.Stream[IO, BalanceCommandLogRow],
       limit: Int,
-      eventBufferTtl: FiniteDuration
+      eventBufferTtl: FiniteDuration,
+      balanceEvents: BalanceEvents
   )(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, BalanceCommands] =
@@ -47,7 +61,7 @@ object BalanceCommands {
       EventBuffer.resource[UUID, BalanceCommandLogRow]
     )
       .flatMapN { (dbQueue, apiQueue, buffer) =>
-        val em = new BalanceCommands(BalanceCommandsStore(accessor), buffer, dbQueue, apiQueue)
+        val em = new BalanceCommands(BalanceCommandsStore(accessor), buffer, dbQueue, apiQueue, balanceEvents)
 
         val listenUpdates = ReadEventManager
           .backgroundPeriodicTask(updatesChannelTick) {

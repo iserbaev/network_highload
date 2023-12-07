@@ -59,9 +59,8 @@ class WalletService private (
 
 object WalletService {
   def resource(
-      balanceEvents: BalanceEvents,
       balanceCommands: BalanceCommands,
       accessor: BalanceAccessor[IO]
   ): Resource[IO, WalletService] =
-    Resource.pure(new WalletService(balanceEvents, balanceCommands, accessor))
+    Resource.pure(new WalletService(balanceCommands.balanceEvents, balanceCommands, accessor))
 }
