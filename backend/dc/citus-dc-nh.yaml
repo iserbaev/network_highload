@@ -34,4 +34,4 @@ services:
 volumes:
   healthcheck-volume:
 
-#docker-compose -p nh -f citus-dc-nh.yaml up -d
+#docker-compose -p citus -f citus-dc-nh.yaml up --scale worker=2 -d
