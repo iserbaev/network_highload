@@ -24,7 +24,7 @@ class DWEndpoints(
 
   val transferCmdPost: SEndpoint = endpointDescriptions.transferCmdPost
     .serverLogic { cmd =>
-      service
+      val program = service
         .publishTransferCommand(cmd)
         .map {
           _.leftMap {
@@ -33,6 +33,11 @@ class DWEndpoints(
               (StatusCode.InternalServerError, ErrorResponse(ex.getMessage, cmd.transactionId.toString, 0).some)
           }
         }
+
+      IO(cmd.currencyType.length > 3).ifM(
+        IO((StatusCode.BadRequest, none).asLeft),
+        program
+      )
     }
 
   val transferEventPost: SEndpoint = endpointDescriptions.transferEventPost

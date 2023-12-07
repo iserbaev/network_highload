@@ -32,8 +32,8 @@ final case class TransferCommand(
 }
 
 final case class TransferCommandResponse(
-    fromAccountBalance: BalanceSnapshot,
-    toAccountBalance: BalanceSnapshot
+    fromAccountBalance: TransferEvent,
+    toAccountBalance: TransferEvent
 )
 
 final case class TransferEvent(

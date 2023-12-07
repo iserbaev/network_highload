@@ -13,11 +13,11 @@ object DWJson {
   implicit val tcEncoder: Encoder.AsObject[TransferCommand] = deriveEncoder[TransferCommand]
   implicit val tcSchema: Schema[TransferCommand]            = Schema.derived[TransferCommand]
 
-  implicit val tcrDecoder: Decoder[TransferCommandResponse]          = deriveDecoder[TransferCommandResponse]
-  implicit val tcrEncoder: Encoder.AsObject[TransferCommandResponse] = deriveEncoder[TransferCommandResponse]
-  implicit val tcrSchema: Schema[TransferCommandResponse]            = Schema.derived[TransferCommandResponse]
-
   implicit val teDecoder: Decoder[TransferEvent]          = deriveDecoder[TransferEvent]
   implicit val teEncoder: Encoder.AsObject[TransferEvent] = deriveEncoder[TransferEvent]
   implicit val teSchema: Schema[TransferEvent]            = Schema.derived[TransferEvent]
+
+  implicit val tcrDecoder: Decoder[TransferCommandResponse]          = deriveDecoder[TransferCommandResponse]
+  implicit val tcrEncoder: Encoder.AsObject[TransferCommandResponse] = deriveEncoder[TransferCommandResponse]
+  implicit val tcrSchema: Schema[TransferCommandResponse]            = Schema.derived[TransferCommandResponse]
 }

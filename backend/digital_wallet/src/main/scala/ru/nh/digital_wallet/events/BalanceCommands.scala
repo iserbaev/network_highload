@@ -5,7 +5,6 @@ import cats.effect.kernel.Resource
 import cats.effect.std.Queue
 import cats.syntax.all._
 import org.typelevel.log4cats.LoggerFactory
-import ru.nh.db.PgListener
 import ru.nh.digital_wallet.BalanceAccessor.BalanceCommandLogRow
 import ru.nh.digital_wallet.events.store.BalanceCommandsStore
 import ru.nh.digital_wallet.{ BalanceAccessor, TransferCommand }
@@ -36,8 +35,9 @@ object BalanceCommands {
       accessor: BalanceAccessor[IO],
       tickInterval: FiniteDuration,
       updatesChannelTick: FiniteDuration,
-      updatesChannelListener: PgListener[BalanceCommandLogRow],
+      updatesChannelListener: () => fs2.Stream[IO, BalanceCommandLogRow],
       limit: Int,
+      eventBufferTtl: FiniteDuration
   )(
       implicit L: LoggerFactory[IO]
   ): Resource[IO, BalanceCommands] =
@@ -51,8 +51,7 @@ object BalanceCommands {
 
         val listenUpdates = ReadEventManager
           .backgroundPeriodicTask(updatesChannelTick) {
-            updatesChannelListener
-              .listen()
+            updatesChannelListener()
               .through(_.evalTap(dbQueue.offer))
               .compile
               .drain
@@ -68,7 +67,8 @@ object BalanceCommands {
             .background
             .void
 
-        listenUpdates *> syncEventsFromQueues
-          .as(em)
+        ReadEventManager.cleanEventBufferPeriodically(eventBufferTtl, buffer) *>
+          listenUpdates *> syncEventsFromQueues
+            .as(em)
       }
 }

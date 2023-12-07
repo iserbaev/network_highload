@@ -26,6 +26,9 @@ class PgListener[E: Decoder](rw: ReadWriteTransactors[IO]) {
 
   def listen(): Stream[IO, E] =
     decodedNotificationStream.transact(rw.readXA.xa)
+
+  def listenFiltered[T](f: E => Option[T]): Stream[IO, T] =
+    listen().flatMap(e => Stream.fromOption(f(e)))
 }
 
 object PgListener {

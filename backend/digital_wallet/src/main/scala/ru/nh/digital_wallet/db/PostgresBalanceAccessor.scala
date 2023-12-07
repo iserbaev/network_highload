@@ -10,7 +10,6 @@ import ru.nh.digital_wallet.BalanceAccessor.{ BalanceCommandLogRow, BalanceEvent
 import ru.nh.digital_wallet.{ BalanceAccessor, BalanceSnapshot, TransferCommand, TransferEvent }
 
 import java.time.Instant
-import java.util.UUID
 
 class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends BalanceAccessor[IO] {
   def logTransferCommand(cmd: TransferCommand): IO[BalanceCommandLogRow] = {
@@ -97,7 +96,7 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .transact(rw.writeXA.xa)
   }
 
-  def getBalanceSnapshot(accountId: UUID): IO[Option[BalanceSnapshot]] = {
+  def getBalanceSnapshot(accountId: String): IO[Option[BalanceSnapshot]] = {
     val sql = sql"""SELECT account_id, last_balance_change_index, mint_sum, spend_sum, last_modified_at 
                    |FROM balance_snapshot
                    |WHERE account_id = $accountId""".stripMargin

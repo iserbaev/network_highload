@@ -12,7 +12,7 @@ import sttp.tapir.server.http4s.serverSentEventsBody
 class DWEndpointDescriptions(implicit L: LoggerFactory[IO]) {
   import DWJson._
 
-  val resource: String                  = "v1/wallet"
+  val resource: String                  = "wallet"
   val resourcePath: EndpointInput[Unit] = resource
 
   implicit val log: Logger[IO] = L.getLoggerFromClass(classOf[DWEndpointDescriptions])
@@ -25,11 +25,11 @@ class DWEndpointDescriptions(implicit L: LoggerFactory[IO]) {
       .in(jsonBody[TransferCommand])
       .out(jsonBody[TransferCommandResponse])
 
-  val transferEventPost: BaseEndpoint[TransferEvent, BalanceSnapshot] =
+  val transferEventPost: BaseEndpoint[TransferEvent, TransferEvent] =
     endpoint.post
       .in("balance_transfer_event")
       .in(jsonBody[TransferEvent])
-      .out(jsonBody[BalanceSnapshot])
+      .out(jsonBody[TransferEvent])
 
   val accountBalanceStream =
     endpoint.get

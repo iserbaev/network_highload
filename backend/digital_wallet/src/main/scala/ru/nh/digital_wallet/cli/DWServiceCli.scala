@@ -7,7 +7,6 @@ import com.monovore.decline.effect.CommandIOApp
 import io.prometheus.client.CollectorRegistry
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
-import ru.nh.auth.AuthClient
 import ru.nh.config.ServerConfig
 import ru.nh.db.PostgresModule
 import ru.nh.db.flyway.FlywaySupport
@@ -27,8 +26,8 @@ object DWServiceCli
 
 object DWCli {
   def program(migrate: Boolean, mock: Boolean): IO[ExitCode] =
-    ServerConfig.load
-      .flatMap { serverConfig =>
+    (ServerConfig.load, DWModule.Config.load)
+      .flatMapN { (serverConfig, dwConfig) =>
         implicit val loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
         implicit val logger: SelfAwareStructuredLogger[IO] =
           loggerFactory.getLoggerFromClass(classOf[DWCli.type])
@@ -58,15 +57,12 @@ object DWCli {
             .prometheus(CollectorRegistry.defaultRegistry, serverConfig.metrics)
             .flatMap(m => PostgresModule(serverConfig.db, m.metricsFactory).tupleLeft(m))
             .flatMap { case (m, pg) =>
-              AuthClient.resource(serverConfig.auth.host, serverConfig.auth.port).flatMap { auth =>
-                DWModule
-                  .resource(pg, auth)
-                  .flatMap { dWModule =>
-                    HttpModule
-                      .resource(serverConfig.http, dWModule.endpoints, m, "digital_wallet", pg.healthCheck)
-                  }
-              }
-
+              DWModule
+                .resource(dwConfig, pg)
+                .flatMap { dWModule =>
+                  HttpModule
+                    .resource(serverConfig.http, dWModule.endpoints, m, "digital_wallet", pg.healthCheck)
+                }
             }
 
         migrateOrValidate.unlessA(mock) *> runProgram.useForever
