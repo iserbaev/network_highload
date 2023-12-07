@@ -18,7 +18,7 @@ class BalanceEventsStore private (accessor: BalanceAccessor[IO])
   def recordValuesBatch[R[_]: NonEmptyTraverse](values: R[(String, TransferEvent)]): IO[Vector[BalanceEventLogRow]] =
     accessor.logTransferEventBatch(values.map(_._2))
 
-  def getLastEventLog(key: String): OptionT[IO, BalanceEventLogRow] = ???
+  def getLastEventLog(key: String): OptionT[IO, BalanceEventLogRow] = accessor.getLastEventLog(key)
 
   def getEventLogs(key: String): IO[Chain[BalanceEventLogRow]] = ???
 

@@ -133,3 +133,10 @@ postgres=#     SELECT nodename, count(*)
 (5 rows)
 
 ```
+
+```bash
+curl -X 'GET' \
+  'http://localhost:8033/wallet/balance/stream/test_account' \
+  -H 'accept: text/event-stream'  \
+  -H 'Authorization: Bearer asasg'
+```

@@ -1,6 +1,7 @@
 package ru.nh.digital_wallet.db
 
 import cats.NonEmptyTraverse
+import cats.data.OptionT
 import cats.effect.{ IO, Resource }
 import doobie._
 import doobie.implicits._
@@ -10,6 +11,7 @@ import ru.nh.digital_wallet.BalanceAccessor.{ BalanceCommandLogRow, BalanceEvent
 import ru.nh.digital_wallet.{ BalanceAccessor, BalanceSnapshot, TransferCommand, TransferEvent }
 
 import java.time.Instant
+import java.util.UUID
 
 class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends BalanceAccessor[IO] {
   def logTransferCommand(cmd: TransferCommand): IO[BalanceCommandLogRow] = {
@@ -58,6 +60,17 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .toVector
       .transact(rw.writeXA.xa)
   }
+  def getLastCmdLog(transactionId: UUID): OptionT[IO, BalanceCommandLogRow] = OptionT {
+    sql"""SELECT transaction_id, account_id_from, account_id_to, amount, currency_code_letter, change_index, created_at
+         |FROM balance_commands_log
+         |WHERE transaction_id = $transactionId
+         |ORDER BY change_index DESC
+         |LIMIT 1
+         |""".stripMargin
+      .query[BalanceCommandLogRow]
+      .option
+      .transact(rw.readXA.xa)
+  }
 
   def logTransferEvent(e: TransferEvent): IO[BalanceEventLogRow] = {
     val sql =
@@ -94,6 +107,17 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .compile
       .toVector
       .transact(rw.writeXA.xa)
+  }
+  def getLastEventLog(accountId: String): OptionT[IO, BalanceEventLogRow] = OptionT {
+    sql"""SELECT account_id, transaction_id, mint_change, spend_change, change_description, change_index, created_at
+         |FROM balance_events_log
+         |WHERE account_id = $accountId
+         |ORDER BY change_index DESC
+         |LIMIT 1
+         |""".stripMargin
+      .query[BalanceEventLogRow]
+      .option
+      .transact(rw.readXA.xa)
   }
 
   def getBalanceSnapshot(accountId: String): IO[Option[BalanceSnapshot]] = {
