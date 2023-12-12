@@ -10,7 +10,7 @@ import ru.nh.events.ReadWriteEventStore
 
 import java.time.Instant
 
-class BalanceEventsStore private (accessor: BalanceAccessor[IO])
+class BalanceEventsStore private [events] (val accessor: BalanceAccessor[IO])
     extends ReadWriteEventStore[IO, TransferEvent, String, BalanceEventLogRow] {
   def recordValueToEventLog(key: String, value: TransferEvent): OptionT[IO, BalanceEventLogRow] =
     OptionT.liftF(accessor.logTransferEvent(value))

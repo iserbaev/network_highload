@@ -3,6 +3,7 @@ package ru.nh.digital_wallet.db
 import cats.NonEmptyTraverse
 import cats.data.OptionT
 import cats.effect.{ IO, Resource }
+import cats.syntax.all._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -120,6 +121,15 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .transact(rw.readXA.xa)
   }
 
+  def getEventLogs(accountId: String): IO[Vector[BalanceEventLogRow]] =
+    sql"""SELECT account_id, transaction_id, mint_change, spend_change, change_description, change_index, created_at
+         |FROM balance_events_log
+         |WHERE account_id = $accountId
+         |""".stripMargin
+      .query[BalanceEventLogRow]
+      .to[Vector]
+      .transact(rw.readXA.xa)
+
   def getBalanceSnapshot(accountId: String): IO[Option[BalanceSnapshot]] = {
     val sql = sql"""SELECT account_id, last_balance_change_index, mint_sum, spend_sum, last_modified_at 
                    |FROM balance_snapshot
@@ -129,6 +139,31 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .query[BalanceSnapshot]
       .option
       .transact(rw.readXA.xa)
+  }
+
+  def upsertBalanceSnapshot(s: BalanceSnapshot): IO[Unit] =
+    upsertBalanceSnp(s)
+      .transact(rw.writeXA.xa)
+      .void
+
+  def upsertBalanceSnapshotBatch[R[_]: NonEmptyTraverse](e: R[BalanceSnapshot]): IO[Unit] =
+    e.traverse_(upsertBalanceSnp).transact(rw.writeXA.xa)
+
+  private def upsertBalanceSnp(s: BalanceSnapshot): ConnectionIO[Unit] = {
+    val sql =
+      sql"""|INSERT INTO balance_snapshot(account_id, last_balance_change_index, mint_sum, spend_sum, last_modified_at)
+            | VALUES (${s.accountId}, ${s.lastChangeIndex}, ${s.mintSum}, ${s.spendSum}, ${s.lastModifiedAt})
+            | ON CONFLICT (account_id)
+            | DO UPDATE
+            | SET
+            |   last_balance_change_index = ${s.lastChangeIndex},
+            |   mint_sum = ${s.mintSum},
+            |   spend_sum = ${s.spendSum},
+            |   last_modified_at = ${s.lastModifiedAt}
+            | WHERE balance_snapshot.last_balance_change_index < ${s.lastChangeIndex}
+            |""".stripMargin
+
+    sql.update.run.void
   }
 }
 
