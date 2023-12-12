@@ -53,7 +53,17 @@ class WalletService private (
       .flatMap(Stream.fromOption(_))
 
   def getBalance(accountId: String): IO[Option[BalanceSnapshot]] =
-    accessor.getBalanceSnapshot(accountId)
+    balanceEvents.balanceStatuses
+      .snapshot(accountId)
+      .value
+      .flatMap {
+        case Some(value) =>
+          value.some.pure[IO]
+        case None =>
+          accessor
+            .getBalanceSnapshot(accountId)
+            .flatTap(_.traverse_(balanceEvents.balanceStatuses.add(accountId, _)))
+      }
 
 }
 

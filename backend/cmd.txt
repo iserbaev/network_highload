@@ -40,3 +40,9 @@ curl -X 'GET' \
   'http://localhost:8081/user/friend/get/cb79d38d-a7a5-4055-9d3d-9f0bab6faa9f' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4NTM3NjU0MzYsImlhdCI6MTY5NTk4MDY3NiwiaWQiOiJjYjc5ZDM4ZC1hN2E1LTQwNTUtOWQzZC05ZjBiYWI2ZmFhOWYiLCAicGFzc3dvcmQiOiJzdHJpbmcifQ.CQ4mdOLHyDlHgFYqAjfayD2JXmktt86kvzg7BNC2PLo'
+
+
+curl -N -X 'GET' \
+  'http://localhost:8033/wallet/balance/stream/Victor89' \
+  -H 'accept: text/event-stream'
+

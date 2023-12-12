@@ -9,6 +9,7 @@ import fs2.concurrent.Topic
 trait SnapshotManager[K, E, S] {
   def snapshot(key: K): OptionT[IO, S]
   def build(key: K, events: Chain[E]): IO[Unit]
+  def add(key: K, current: S): IO[Unit]
   def updateWith(key: K, events: Chain[E], current: S): IO[Unit]
   def updateWith(key: K, event: E, current: S): IO[Unit] =
     updateWith(key, Chain.one(event), current)
@@ -31,6 +32,9 @@ object SnapshotManager {
           builder.build(events).traverse_ { s =>
             ref.update(_.updated(key, s)) *> topic.publish1(s)
           }
+
+        def add(key: K, current: S): IO[Unit] =
+          ref.update(_.updated(key, current))
 
         def updateWith(key: K, events: Chain[E], current: S): IO[Unit] =
           ref.flatModify { m =>
