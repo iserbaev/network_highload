@@ -9,27 +9,7 @@ final case class TransferCommand(
     amount: Int,
     currencyType: String,
     transactionId: UUID
-) {
-  def fromEvent(index: Long): TransferEvent =
-    TransferEvent(
-      accountId = fromAccount,
-      transactionId = transactionId,
-      changeIndex = index,
-      mint = None,
-      spend = Some(amount),
-      description = s"Spend $amount from [$fromAccount] to [$toAccount] according to $transactionId"
-    )
-
-  def toEvent(index: Long): TransferEvent =
-    TransferEvent(
-      accountId = fromAccount,
-      transactionId = transactionId,
-      changeIndex = index,
-      mint = Some(amount),
-      spend = None,
-      description = s"Mint $amount to [$toAccount] from [$fromAccount] according to $transactionId"
-    )
-}
+)
 
 final case class TransferCommandResponse(
     fromAccountBalance: TransferEvent,

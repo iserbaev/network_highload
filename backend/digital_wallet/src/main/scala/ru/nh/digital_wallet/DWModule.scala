@@ -3,7 +3,6 @@ package ru.nh.digital_wallet
 import cats.data.NonEmptyList
 import cats.effect.{ IO, Resource }
 import cats.syntax.all._
-import org.typelevel.log4cats.noop.NoOpLogger
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
 import ru.nh.db.{ PgListener, PostgresModule }
 import ru.nh.digital_wallet.BalanceAccessor.{ BalanceCommandLogRow, BalanceEventLogRow }
@@ -49,7 +48,7 @@ object DWModule {
   ): Resource[IO, DWModule] = {
     import BalanceCommandLogRow.balanceCommandLogSnakeCaseDecoder
     import BalanceEventLogRow.balanceEventLogSnakeCaseDecoder
-    implicit val log: SelfAwareStructuredLogger[IO] = NoOpLogger[IO]
+    implicit val log: SelfAwareStructuredLogger[IO] = L.getLoggerFromClass(classOf[DWModule])
 
     (
       PgListener.channelEvents[BalanceCommandLogRow, BalanceEventLogRow](config.updatesChannel, postgresModule.rw),
