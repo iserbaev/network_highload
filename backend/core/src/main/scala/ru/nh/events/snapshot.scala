@@ -8,7 +8,7 @@ import fs2.concurrent.Topic
 
 trait SnapshotManager[K, E, S] {
   def snapshot(key: K): OptionT[IO, S]
-  def build(key: K, events: Chain[E]): IO[Unit]
+  def build(key: K, events: Chain[E]): IO[Option[S]]
   def add(key: K, current: S): IO[Unit]
   def updateWith(key: K, events: Chain[E], current: S): IO[Unit]
   def updateWith(key: K, event: E, current: S): IO[Unit] =
@@ -28,9 +28,11 @@ object SnapshotManager {
         def snapshot(key: K): OptionT[IO, S] =
           OptionT(ref.get.map(_.get(key)))
 
-        def build(key: K, events: Chain[E]): IO[Unit] =
-          builder.build(events).traverse_ { s =>
-            ref.update(_.updated(key, s)) *> topic.publish1(s)
+        def build(key: K, events: Chain[E]): IO[Option[S]] =
+          builder.build(events).traverse { s =>
+            ref.update(_.updated(key, s)) *>
+              topic.publish1(s)
+                .as(s)
           }
 
         def add(key: K, current: S): IO[Unit] =

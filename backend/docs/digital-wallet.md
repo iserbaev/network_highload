@@ -55,9 +55,23 @@ curl -X 'POST' \
   -d '{
   "fromAccount": "test_account",
   "toAccount": "in",
-  "amount": 1073741824,
+  "amount": 1000,
   "currencyType": "USD",
-  "transactionId": "3fa85f64-5717-4562-b3fc-2c963f66afa8"
+  "transactionId": "3fa85f64-5717-4562-b3fc-2c963f66afa3"
+}'
+```
+
+```bash
+curl -X 'POST' \
+  'http://localhost:8033/wallet/balance_transfer_command' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "fromAccount": "test_account",
+  "toAccount": "in",
+  "amount": 2500,
+  "currencyType": "USD",
+  "transactionId": "3fa85f64-5717-4562-b3fc-2c963f66afa4"
 }'
 ```
 
