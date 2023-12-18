@@ -43,6 +43,7 @@ object BalanceEvents {
   def apply(
       accessor: BalanceAccessor[IO],
       tickInterval: FiniteDuration,
+      useUpdatesChannel: Boolean,
       updatesChannelTick: FiniteDuration,
       updatesChannelListener: () => fs2.Stream[IO, BalanceEventLogRow],
       limit: Int,
@@ -81,6 +82,8 @@ object BalanceEvents {
               .drain
           }
 
+        val syncFromUpdatesLogToDbQueue = ReadEventManager.backgroundSyncFromStorageToDBQueue(tickInterval, limit, em)
+
         val saveBalanceStatusTask =
           bs.snapshots
             .groupWithin(limit, 5.seconds)
@@ -102,7 +105,8 @@ object BalanceEvents {
             .void
 
         ReadEventManager.cleanEventBufferPeriodically(eventBufferTtl, buffer) *>
-          listenUpdates *> syncEventsFromQueues *> saveBalanceStatusTask
+          (if (useUpdatesChannel) listenUpdates else syncFromUpdatesLogToDbQueue) *>
+          syncEventsFromQueues *> saveBalanceStatusTask
             .as(em)
       }
 }

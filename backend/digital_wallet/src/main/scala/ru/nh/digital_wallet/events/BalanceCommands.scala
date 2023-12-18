@@ -47,6 +47,7 @@ object BalanceCommands {
   def apply(
       accessor: BalanceAccessor[IO],
       tickInterval: FiniteDuration,
+      useUpdatesChannel: Boolean,
       updatesChannelTick: FiniteDuration,
       updatesChannelListener: () => fs2.Stream[IO, BalanceCommandLogRow],
       limit: Int,
@@ -71,6 +72,8 @@ object BalanceCommands {
               .drain
           }
 
+        val syncFromUpdatesLogToDbQueue = ReadEventManager.backgroundSyncFromStorageToDBQueue(tickInterval, limit, em)
+
         val syncEventsFromQueues =
           em.streamQueuesGrouped(limit, tickInterval)
             .broadcastThrough(
@@ -82,7 +85,8 @@ object BalanceCommands {
             .void
 
         ReadEventManager.cleanEventBufferPeriodically(eventBufferTtl, buffer) *>
-          listenUpdates *> syncEventsFromQueues
+          (if (useUpdatesChannel) listenUpdates else syncFromUpdatesLogToDbQueue) *>
+          syncEventsFromQueues
             .as(em)
       }
 }

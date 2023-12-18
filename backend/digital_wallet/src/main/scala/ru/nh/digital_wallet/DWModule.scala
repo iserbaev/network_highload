@@ -26,6 +26,7 @@ object DWModule {
       eventBufferTtl: FiniteDuration,
       defaultLimit: Int,
       defaultBatchSize: Int,
+      useUpdatesChannel: Boolean,
       updatesChannel: String,
       updatesChannelTick: FiniteDuration
   )
@@ -57,6 +58,7 @@ object DWModule {
       val bc = BalanceEvents(
         ba,
         config.updateTickInterval,
+        config.useUpdatesChannel,
         config.updatesChannelTick,
         () => pgl.listenFiltered(_.event),
         config.defaultLimit,
@@ -65,6 +67,7 @@ object DWModule {
         BalanceCommands(
           ba,
           config.updateTickInterval,
+          config.useUpdatesChannel,
           config.updatesChannelTick,
           () => pgl.listenFiltered(_.cmd),
           config.defaultLimit,
