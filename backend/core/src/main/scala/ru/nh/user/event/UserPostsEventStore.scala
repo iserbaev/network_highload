@@ -17,7 +17,7 @@ class UserPostsEventStore private (val accessor: PostAccessor[IO]) extends ReadE
   def getEventLogs(key: UUID): IO[Chain[PostRow]] =
     accessor.userPosts(key, 0)
 
-  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[UUID], lastModifiedAt: Instant, limit: Int): IO[Vector[PostRow]] =
+  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[UUID], from: Instant, limit: Int): IO[Vector[PostRow]] =
     accessor.getPostsLog(keys, 0, limit)
 }
 

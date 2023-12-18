@@ -9,11 +9,7 @@ import java.time.Instant
 trait ReadEventStore[F[_], K, E] {
   def getLastEventLog(key: K): OptionT[F, E]
   def getEventLogs(key: K): F[Chain[E]]
-  def getEventLogs[R[_]: NonEmptyTraverse](
-      keys: R[K],
-      lastModifiedAt: Instant,
-      limit: Int
-  ): F[Vector[E]]
+  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[K], from: Instant, limit: Int): F[Vector[E]]
 }
 
 trait ReadWriteEventStore[F[_], A, K, E] extends ReadEventStore[F, K, E] {

@@ -21,15 +21,12 @@ class BalanceCommandsStore private (accessor: BalanceAccessor[IO])
   def recordValuesBatch[R[_]: NonEmptyTraverse](values: R[(UUID, TransferCommand)]): IO[Vector[BalanceCommandLogRow]] =
     accessor.logTransferCommandsBatch(values.map(_._2))
 
-  override def getLastEventLog(key: UUID): OptionT[IO, BalanceCommandLogRow] = accessor.getLastCmdLog(key)
+  def getLastEventLog(key: UUID): OptionT[IO, BalanceCommandLogRow] = accessor.getLastCmdLog(key)
 
-  override def getEventLogs(key: UUID): IO[Chain[BalanceCommandLogRow]] = ???
+  def getEventLogs(key: UUID): IO[Chain[BalanceCommandLogRow]] = ???
 
-  override def getEventLogs[R[_]: NonEmptyTraverse](
-      keys: R[UUID],
-      lastModifiedAt: Instant,
-      limit: Int
-  ): IO[Vector[BalanceCommandLogRow]] = ???
+  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[UUID], from: Instant, limit: Int): IO[Vector[BalanceCommandLogRow]] =
+    accessor.getCmdLogs(keys, from, limit)
 }
 
 object BalanceCommandsStore {

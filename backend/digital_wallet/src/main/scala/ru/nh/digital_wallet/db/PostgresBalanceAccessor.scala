@@ -73,6 +73,18 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .transact(rw.readXA.xa)
   }
 
+  def getCmdLogs[R[_]: NonEmptyTraverse](keys: R[UUID], from: Instant, limit: Int): IO[Vector[BalanceCommandLogRow]] =
+    sql"""SELECT transaction_id, account_id_from, account_id_to, amount, currency_code_letter, change_index, created_at
+         |FROM balance_commands_log
+         | WHERE created_at  > $from
+         |   AND ${Fragments.in(fr"transaction_id", keys)}
+         | ORDER BY created_at
+         | LIMIT $limit
+         |""".stripMargin
+      .query[BalanceCommandLogRow]
+      .to[Vector]
+      .transact(rw.readXA.xa)
+
   def logTransferEvent(e: TransferEvent): IO[BalanceEventLogRow] = {
     val sql =
       sql"""INSERT INTO balance_events_log(account_id, transaction_id,
@@ -125,6 +137,18 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
     sql"""SELECT account_id, transaction_id, mint_change, spend_change, change_description, change_index, created_at
          |FROM balance_events_log
          |WHERE account_id = $accountId
+         |""".stripMargin
+      .query[BalanceEventLogRow]
+      .to[Vector]
+      .transact(rw.readXA.xa)
+
+  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[String], from: Instant, limit: Int): IO[Vector[BalanceEventLogRow]] =
+    sql"""SELECT account_id, transaction_id, mint_change, spend_change, change_description, change_index, created_at
+         |FROM balance_events_log
+         | WHERE created_at  > $from
+         |   AND ${Fragments.in(fr"account_id", keys)}
+         | ORDER BY created_at
+         | LIMIT $limit
          |""".stripMargin
       .query[BalanceEventLogRow]
       .to[Vector]

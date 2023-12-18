@@ -12,11 +12,13 @@ trait BalanceAccessor[F[_]] {
   def logTransferCommand(cmd: TransferCommand): F[BalanceCommandLogRow]
   def logTransferCommandsBatch[R[_]: NonEmptyTraverse](cmd: R[TransferCommand]): F[Vector[BalanceCommandLogRow]]
   def getLastCmdLog(transactionId: UUID): OptionT[F, BalanceCommandLogRow]
+  def getCmdLogs[R[_]: NonEmptyTraverse](keys: R[UUID], from: Instant, limit: Int): F[Vector[BalanceCommandLogRow]]
 
   def logTransferEvent(e: TransferEvent): F[BalanceEventLogRow]
   def logTransferEventBatch[R[_]: NonEmptyTraverse](e: R[TransferEvent]): F[Vector[BalanceEventLogRow]]
   def getLastEventLog(accountId: String): OptionT[F, BalanceEventLogRow]
   def getEventLogs(accountId: String): F[Vector[BalanceEventLogRow]]
+  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[String], from: Instant, limit: Int): F[Vector[BalanceEventLogRow]]
 
   def getBalanceSnapshot(accountId: String): F[Option[BalanceSnapshot]]
 

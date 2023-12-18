@@ -20,13 +20,10 @@ class BalanceEventsStore private[events] (val accessor: BalanceAccessor[IO])
 
   def getLastEventLog(key: String): OptionT[IO, BalanceEventLogRow] = accessor.getLastEventLog(key)
 
-  def getEventLogs(key: String): IO[Chain[BalanceEventLogRow]] = ???
+  def getEventLogs(key: String): IO[Chain[BalanceEventLogRow]] = accessor.getEventLogs(key).map(Chain.fromSeq)
 
-  def getEventLogs[R[_]: NonEmptyTraverse](
-      keys: R[String],
-      lastModifiedAt: Instant,
-      limit: Int
-  ): IO[Vector[BalanceEventLogRow]] = ???
+  def getEventLogs[R[_]: NonEmptyTraverse](keys: R[String], from: Instant, limit: Int): IO[Vector[BalanceEventLogRow]] =
+    accessor.getEventLogs(keys, from, limit)
 }
 
 object BalanceEventsStore {
