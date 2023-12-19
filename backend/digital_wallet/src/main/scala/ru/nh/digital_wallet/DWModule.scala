@@ -6,7 +6,7 @@ import cats.syntax.all._
 import org.typelevel.log4cats.{ LoggerFactory, SelfAwareStructuredLogger }
 import ru.nh.db.{ PgListener, PostgresModule }
 import ru.nh.digital_wallet.BalanceAccessor.{ BalanceCommandLogRow, BalanceEventLogRow }
-import ru.nh.digital_wallet.db.PostgresBalanceAccessor
+import ru.nh.digital_wallet.db.{ PostgresBalanceAccessor, PostgresPhaseStatusAccessor }
 import ru.nh.digital_wallet.events.{ BalanceCommands, BalanceEvents }
 import ru.nh.digital_wallet.http.DWEndpoints
 import ru.nh.http.SEndpoint
@@ -27,7 +27,8 @@ object DWModule {
       defaultBatchSize: Int,
       useUpdatesChannel: Boolean,
       updatesChannel: String,
-      updatesChannelTick: FiniteDuration
+      updatesChannelTick: FiniteDuration,
+      transferTimeout: FiniteDuration
   )
   object Config {
     import pureconfig.ConfigSource
@@ -52,8 +53,9 @@ object DWModule {
 
     (
       PgListener.channelEvents[BalanceCommandLogRow, BalanceEventLogRow](config.updatesChannel, postgresModule.rw),
-      PostgresBalanceAccessor.resource(postgresModule.rw)
-    ).flatMapN { (pgl, ba) =>
+      PostgresBalanceAccessor.resource(postgresModule.rw),
+      PostgresPhaseStatusAccessor.resource(postgresModule.rw)
+    ).flatMapN { (pgl, ba, ps) =>
       val bc = BalanceEvents(
         ba,
         config.updateTickInterval,
@@ -75,7 +77,7 @@ object DWModule {
         )
       )
 
-      bc.flatMap(WalletService.resource(_, ba)).map { ws =>
+      bc.flatMap(WalletService.resource(_, ba, ps)).map { ws =>
         new DWModule {
           val service: WalletService = ws
 

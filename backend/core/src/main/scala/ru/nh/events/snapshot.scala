@@ -31,7 +31,8 @@ object SnapshotManager {
         def build(key: K, events: Chain[E]): IO[Option[S]] =
           builder.build(events).traverse { s =>
             ref.update(_.updated(key, s)) *>
-              topic.publish1(s)
+              topic
+                .publish1(s)
                 .as(s)
           }
 
