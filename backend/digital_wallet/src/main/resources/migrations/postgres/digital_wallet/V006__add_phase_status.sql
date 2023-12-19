@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS phase_status
     to_completed     BOOLEAN                                NOT NULL,
     to_transfer_ts   TIMESTAMP,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    done             BOOLEAN                                NOT NULL,
     CONSTRAINT "primary_phase_status"
         PRIMARY KEY (transaction_id)
 );

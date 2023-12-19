@@ -32,7 +32,17 @@ final case class TransferEvent(
     spend: Option[Int],
     description: String,
     changeIndex: Long,
-)
+) {
+  def revert: TransferEvent =
+    TransferEvent(
+      accountId = accountId,
+      transactionId = transactionId,
+      mint = spend,
+      spend = mint,
+      description = s"Compensate transfer  $accountId by $transactionId",
+      changeIndex = changeIndex
+    )
+}
 
 object TransferEvent {
   implicit val teShow: Show[TransferEvent] = { te =>
@@ -54,5 +64,6 @@ final case class PhaseStatus(
     fromTransferCreatedAt: Option[Instant],
     toTransferCompleted: Boolean,
     toTransferCreatedAt: Option[Instant],
-    createdAt: Instant
+    createdAt: Instant,
+    done: Boolean
 )

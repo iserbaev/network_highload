@@ -6,6 +6,7 @@ import fs2.Stream
 import org.typelevel.log4cats.{ Logger, LoggerFactory, SelfAwareStructuredLogger }
 import ru.nh.digital_wallet.events.{ BalanceCommands, BalanceEvents }
 
+import java.util.UUID
 import scala.concurrent.duration.DurationInt
 
 class WalletService private (
@@ -19,9 +20,11 @@ class WalletService private (
       .publish(cmd.transactionId, cmd)
       .flatMap {
         case Some(value) =>
-          val phaseStatusInit = IO.realTimeInstant.flatMap { i =>
-            phaseStatusAccessor.upsert(PhaseStatus(cmd.transactionId, false, none, false, none, i))
-          }
+          val phaseStatusInit = IO.realTimeInstant
+            .flatMap { i =>
+              phaseStatusAccessor.upsert(PhaseStatus(cmd.transactionId, false, none, false, none, i, false))
+            }
+            .flatTap(c => log.info(s"Phase status record stored $c"))
 
           val from = balanceEvents
             .subscribe(value.fromAccount)
@@ -48,12 +51,19 @@ class WalletService private (
             }
 
           log.info(show"Transfer command stored $cmd") *>
-            phaseStatusInit.flatTap(c => log.info(s"Phase status record stored $c")) *>
+            phaseStatusInit *>
             (from, to).mapN((f, t) => TransferCommandResponse(f.toEvent, t.toEvent))
         case None =>
           IO.raiseError(new RuntimeException(s"Publish command failed $cmd"))
       }
       .attempt
+      .flatTap {
+        _.leftTraverse(_ =>
+          compensate(cmd.transactionId, cmd.fromAccount) *>
+            compensate(cmd.transactionId, cmd.toAccount)
+        )
+      } <* phaseStatusAccessor.completePhase(cmd.transactionId)
+      .flatTap(_ => log.info(s"Phase status done [${cmd.transactionId}]"))
 
   def publishTransferEvent(e: TransferEvent): IO[Either[Throwable, TransferEvent]] =
     balanceEvents
@@ -82,6 +92,15 @@ class WalletService private (
             .getBalanceSnapshot(accountId)
             .flatTap(_.traverse_(balanceEvents.balanceStatuses.add(accountId, _)))
       }
+
+  private def compensate(transactionId: UUID, accountId: String): IO[Unit] =
+    accessor.getEventLog(accountId, transactionId).flatMap {
+      case Some(value) =>
+        log.info(show"Compensate transfer ${value.toEvent}") *>
+          accessor.logTransferEvent(value.toEvent.revert).void
+      case None =>
+        IO.unit
+    }
 
 }
 
