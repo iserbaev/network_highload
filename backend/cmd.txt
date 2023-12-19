@@ -2,6 +2,7 @@ sbt "project auth; Universal/stage; Docker/publishLocal"
 sbt "project user; Universal/stage; Docker/publishLocal"
 sbt "project conversation; Universal/stage; Docker/publishLocal"
 sbt "project post; Universal/stage; Docker/publishLocal"
+sbt "project digital_wallet; Universal/stage; Docker/publishLocal"
 
 auth/target/universal/stage/bin/auth-service-cli server --force-migrate
 

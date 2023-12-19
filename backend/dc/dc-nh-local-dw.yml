@@ -1,0 +1,13 @@
+version: '3.5'
+
+services:
+  digital_wallet-1:
+    image: public.ecr.aws/v3c4w4q9/nh-digital-wallet:0.0.3-SNAPSHOT
+    container_name: digital_wallet-1
+    environment:
+      NH_READ_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/nh"
+      NH_WRITE_POSTGRES_JDBC_URL: "jdbc:postgresql://host.docker.internal:5432/nh"
+    ports:
+      - "8033:8033"
+    command: server --force-migrate
+#docker-compose -f dc-nh-local-dw.yml up -d

@@ -279,7 +279,7 @@ lazy val digitalWallet = Project(id = "digital_wallet", base = file("digital_wal
     ),
     libraryDependencies ++= Dependencies.userDeps.value,
     libraryDependencies ++= Dependencies.commonTest.value,
-    Compile / mainClass  := Some("ru.nh.user.cli.DigitalWalletServiceCli"),
+    Compile / mainClass  := Some("ru.nh.digital_wallet.cli.DWServiceCli"),
     executableScriptName := "digital-wallet-service-cli",
     dockerSettings("digital-wallet", 8033),
     bashScriptExtraDefines ++= Seq(
