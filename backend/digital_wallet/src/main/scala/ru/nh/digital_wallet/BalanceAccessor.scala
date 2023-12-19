@@ -18,7 +18,7 @@ trait BalanceAccessor[F[_]] {
   def logTransferEventBatch[R[_]: NonEmptyTraverse](e: R[TransferEvent]): F[Vector[BalanceEventLogRow]]
   def getLastEventLog(accountId: String): OptionT[F, BalanceEventLogRow]
   def getEventLogs(accountId: String): F[Vector[BalanceEventLogRow]]
-  def getEventLog(accountId: String, transactionId: UUID): F[Option[BalanceEventLogRow]]
+  def getEventLog(accountId: String, transactionId: UUID): F[Vector[BalanceEventLogRow]]
   def getEventLogs[R[_]: NonEmptyTraverse](keys: R[String], from: Instant, limit: Int): F[Vector[BalanceEventLogRow]]
 
   def getBalanceSnapshot(accountId: String): F[Option[BalanceSnapshot]]

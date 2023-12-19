@@ -15,8 +15,8 @@ import scala.concurrent.duration.FiniteDuration
 class PostgresPhaseStatusAccessor private (rw: ReadWriteTransactors[IO]) extends PhaseStatusAccessor[IO] {
 
   def upsert(ps: PhaseStatus): IO[Int] =
-    sql"""|INSERT INTO phase_status(transaction_id, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done)
-          |VALUES (${ps.transactionId}, ${ps.fromTransferCompleted}, ${ps.fromTransferCreatedAt}, ${ps.toTransferCompleted}, ${ps.toTransferCreatedAt}, ${ps.createdAt}, ${ps.done})
+    sql"""|INSERT INTO phase_status(transaction_id, account_id_from, account_id_to, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done)
+          |VALUES (${ps.transactionId}, ${ps.fromAccount}, ${ps.toAccount}, ${ps.fromTransferCompleted}, ${ps.fromTransferCreatedAt}, ${ps.toTransferCompleted}, ${ps.toTransferCreatedAt}, ${ps.createdAt}, ${ps.done})
           |ON CONFLICT (transaction_id)
           |    DO UPDATE
           |    SET from_completed = ${ps.fromTransferCompleted},
@@ -52,7 +52,7 @@ class PostgresPhaseStatusAccessor private (rw: ReadWriteTransactors[IO]) extends
       .transact(rw.writeXA.xa)
 
   def getNonCompletedPhases(until: Instant, limit: Int): IO[Vector[PhaseStatus]] =
-    sql"""|SELECT transaction_id, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done
+    sql"""|SELECT transaction_id, account_id_from, account_id_to, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done
           |FROM phase_status
           |WHERE done = false 
           |  AND created_at < $until
@@ -80,7 +80,7 @@ class PostgresPhaseStatusAccessor private (rw: ReadWriteTransactors[IO]) extends
       .transact(rw.writeXA.xa)
 
   def getList(from: Instant, limit: Int): IO[Vector[PhaseStatus]] =
-    sql"""|SELECT transaction_id, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done
+    sql"""|SELECT transaction_id, account_id_from, account_id_to, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done
           |FROM phase_status
           |WHERE created_at  > $from
           |ORDER BY created_at
@@ -91,7 +91,7 @@ class PostgresPhaseStatusAccessor private (rw: ReadWriteTransactors[IO]) extends
       .transact(rw.readXA.xa)
 
   def get(transactionId: UUID): IO[PhaseStatus] =
-    sql"""|SELECT transaction_id, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done
+    sql"""|SELECT transaction_id, account_id_from, account_id_to, from_completed, from_transfer_ts, to_completed, to_transfer_ts, created_at, done
           |FROM phase_status
           |WHERE transaction_id = ${transactionId}
           """.stripMargin

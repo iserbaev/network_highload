@@ -40,7 +40,7 @@ final case class TransferEvent(
       mint = spend,
       spend = mint,
       description = s"Compensate transfer  $accountId by $transactionId",
-      changeIndex = changeIndex
+      changeIndex = changeIndex + 1
     )
 }
 
@@ -60,6 +60,8 @@ final case class BalanceSnapshot(
 
 final case class PhaseStatus(
     transactionId: UUID,
+    fromAccount: String,
+    toAccount: String,
     fromTransferCompleted: Boolean,
     fromTransferCreatedAt: Option[Instant],
     toTransferCompleted: Boolean,

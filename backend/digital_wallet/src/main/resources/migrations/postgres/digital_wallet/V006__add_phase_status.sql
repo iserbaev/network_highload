@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS phase_status
 (
     transaction_id   UUID                                   NOT NULL,
+    account_id_from  VARCHAR(64)                            NOT NULL,
+    account_id_to    VARCHAR(64)                            NOT NULL,
     from_completed   BOOLEAN                                NOT NULL,
     from_transfer_ts TIMESTAMP,
     to_completed     BOOLEAN                                NOT NULL,

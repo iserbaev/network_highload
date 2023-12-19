@@ -142,14 +142,14 @@ class PostgresBalanceAccessor private (rw: ReadWriteTransactors[IO]) extends Bal
       .to[Vector]
       .transact(rw.readXA.xa)
 
-  def getEventLog(accountId: String, transactionId: UUID): IO[Option[BalanceEventLogRow]] =
+  def getEventLog(accountId: String, transactionId: UUID): IO[Vector[BalanceEventLogRow]] =
     sql"""SELECT account_id, transaction_id, mint_change, spend_change, change_description, change_index, created_at
          |FROM balance_events_log
          |WHERE account_id = $accountId
          |  AND transaction_id = $transactionId
          |""".stripMargin
       .query[BalanceEventLogRow]
-      .option
+      .to[Vector]
       .transact(rw.readXA.xa)
 
   def getEventLogs[R[_]: NonEmptyTraverse](keys: R[String], from: Instant, limit: Int): IO[Vector[BalanceEventLogRow]] =
