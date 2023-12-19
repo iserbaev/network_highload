@@ -36,7 +36,7 @@ class WalletService private (
             }
 
           val to = balanceEvents
-            .subscribe(value.fromAccount)
+            .subscribe(value.toAccount)
             .collectFirst {
               case e if e.transactionId == value.transactionId => e
             }

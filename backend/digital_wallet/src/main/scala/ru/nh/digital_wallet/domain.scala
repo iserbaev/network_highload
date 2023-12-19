@@ -16,7 +16,7 @@ final case class TransferCommand(
 
 object TransferCommand {
   implicit val tcShow: Show[TransferCommand] = { tc =>
-    show"[${tc.transactionId}] command to transfer ${tc.fromAccount} => ${tc.toAccount} ${tc.amount}${tc.currencyType}"
+    show"[${tc.transactionId}] command to transfer ${tc.fromAccount} => ${tc.toAccount} ${tc.amount} ${tc.currencyType}"
   }
 }
 
