@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS balance_commands_log
     account_id_to        VARCHAR(64)                                                  NOT NULL,
     amount               INT                                                          NOT NULL,
     currency_code_letter VARCHAR(3)                                                   NOT NULL,
-    change_index         BIGINT                   DEFAULT nextval('change_index_seq') NOT NULL,
+    change_index         BIGINT                   DEFAULT nextval('change_index_seq') NOT NULL, -- TODO remove sequence
     created_at           TIMESTAMP WITH TIME ZONE DEFAULT now()                       NOT NULL,
     CONSTRAINT "primary_balance_commands_log"
         PRIMARY KEY (transaction_id)
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS balance_events_log
     spend_change       INT,
     change_description TEXT                                   NOT NULL,
     change_index       BIGINT                                 NOT NULL,
-    created_at         TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,-- TODO remove default
     CONSTRAINT "primary_balance_events_log"
         PRIMARY KEY (account_id, transaction_id, change_index)
 );
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS balance_snapshot
     last_balance_change_index BIGINT                                 NOT NULL,
     mint_sum                  INT,
     spend_sum                 INT,
-    last_modified_at          TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    last_modified_at          TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,-- TODO remove default
     CONSTRAINT "primary_balance_status"
         PRIMARY KEY (account_id)
 );
